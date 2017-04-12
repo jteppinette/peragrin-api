@@ -1,40 +1,52 @@
 package auth
 
 import (
-	"fmt"
+	"encoding/json"
 	"net/http"
 
 	"github.com/gorilla/context"
-	"gitlab.com/peragrin/api/models"
 	"gitlab.com/peragrin/api/service"
 )
 
 func (c *Config) UserHandler(w http.ResponseWriter, r *http.Request) {
 	if user, ok := context.GetOk(r, "user"); ok {
-		json(w, http.StatusOK, user)
+		rend(w, http.StatusOK, user)
 		return
 	}
 	service.Error(w, http.StatusUnauthorized, errAuthenticationRequired)
+}
+
+func (c *Config) LoginHandler(w http.ResponseWriter, r *http.Request) {
+	creds := Credentials{}
+	err := json.NewDecoder(r.Body).Decode(&creds)
+	if err != nil {
+		service.Error(w, http.StatusBadRequest, errBadCredentialsFormat)
+		return
+	}
+
+	user, err := creds.Authenticate(c)
+	if err != nil {
+		service.Error(w, http.StatusUnauthorized, err)
+		return
+	}
+
+	rend(w, http.StatusOK, user)
 }
 
 func (c *Config) RequiredMiddleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		username, password, ok := r.BasicAuth()
 		if !ok {
-			service.Error(w, http.StatusBadRequest, errValidBasicAuthCredentialsRequired)
+			service.Error(w, http.StatusBadRequest, errBadCredentialsFormat)
 			return
 		}
-		user, err := models.GetUserByUsername(username, c.Client)
-		if err != nil {
-			service.Error(w, http.StatusBadRequest, fmt.Errorf("%+v: %+v", errUserNotFound, err))
-			return
-		}
-		if err := user.ValidatePassword(password); err != nil {
-			service.Error(w, http.StatusUnauthorized, errInvalidCredentials)
-			return
-		}
-		context.Set(r, "user", user)
 
+		user, err := Credentials{username, password}.Authenticate(c)
+		if err != nil {
+			service.Error(w, http.StatusUnauthorized, err)
+		}
+
+		context.Set(r, "user", user)
 		h.ServeHTTP(w, r)
 	})
 }

@@ -34,6 +34,7 @@ func serve() {
 	authenticated := base.Append(auth.RequiredMiddleware)
 
 	r := mux.NewRouter()
+	r.Handle("/login", base.ThenFunc(auth.LoginHandler))
 	r.Handle("/user", authenticated.ThenFunc(auth.UserHandler))
 	r.Handle("/users", authenticated.ThenFunc(users.ListHandler))
 

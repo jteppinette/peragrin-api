@@ -6,7 +6,7 @@ import (
 )
 
 var (
-	json = render.New().JSON
+	rend = render.New().JSON
 )
 
 type Config struct {

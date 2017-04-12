@@ -13,5 +13,5 @@ func (c *Config) ListHandler(w http.ResponseWriter, r *http.Request) {
 		service.Error(w, http.StatusBadRequest, errListUsers)
 		return
 	}
-	json(w, http.StatusBadRequest, v)
+	rend(w, http.StatusBadRequest, v)
 }

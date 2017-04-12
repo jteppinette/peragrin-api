@@ -27,7 +27,7 @@ func serve() {
 		log.Fatal(err)
 	}
 
-	auth := auth.Init(client)
+	auth := auth.Init(client, viper.GetString("TOKEN_SECRET"))
 	users := users.Init(client)
 
 	base := alice.New(handlers.RecoveryHandler(handlers.PrintRecoveryStack(true)), logging)
@@ -54,4 +54,7 @@ func init() {
 
 	Serve.PersistentFlags().StringP("port", "", "8000", "port that the api will listen on")
 	viper.BindPFlag("PORT", Serve.PersistentFlags().Lookup("port"))
+
+	Serve.PersistentFlags().StringP("token-secret", "", "token-secret", "the secret used to sign the json web tokens")
+	viper.BindPFlag("TOKEN_SECRET", Serve.PersistentFlags().Lookup("token-secret"))
 }

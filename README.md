@@ -27,12 +27,13 @@
 
 Any variables marked as `insecure: true` should be overriden before being added to a production system.
 
-* DB_NAME         `default: db`
-* DB_USER         `default: db`
-* DB_PASSWORD     `defualt: secret, insecure: true`
-* DB_HOST         `default: 0.0.0.0`
-* DB_PORT         `default: 5432`
-* PORT            `default: 8000`
+* DB_NAME          `default: db`
+* DB_USER          `default: db`
+* DB_PASSWORD      `defualt: secret, insecure: true`
+* DB_HOST          `default: 0.0.0.0`
+* DB_PORT          `default: 5432`
+* PORT             `default: 8000`
+* TOKEN_SECRET     `default: token-secret, insecure: true`
 
 ### Docker
 

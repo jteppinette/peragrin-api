@@ -10,9 +10,10 @@ var (
 )
 
 type Config struct {
-	Client *sqlx.DB
+	Client      *sqlx.DB
+	TokenSecret string
 }
 
-func Init(client *sqlx.DB) *Config {
-	return &Config{client}
+func Init(client *sqlx.DB, tokenSecret string) *Config {
+	return &Config{client, tokenSecret}
 }

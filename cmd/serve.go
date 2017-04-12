@@ -54,7 +54,4 @@ func init() {
 
 	Serve.PersistentFlags().StringP("port", "", "8000", "port that the api will listen on")
 	viper.BindPFlag("PORT", Serve.PersistentFlags().Lookup("port"))
-
-	Serve.PersistentFlags().StringP("http-dir", "", "public", "directory to serve public assets from")
-	viper.BindPFlag("HTTP_DIR", Serve.PersistentFlags().Lookup("http-dir"))
 }

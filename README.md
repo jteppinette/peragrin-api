@@ -33,7 +33,6 @@ Any variables marked as `insecure: true` should be overriden before being added 
 * DB_HOST         `default: 0.0.0.0`
 * DB_PORT         `default: 5432`
 * PORT            `default: 8000`
-* HTTP_DIR        `default: public`
 
 ### Docker
 

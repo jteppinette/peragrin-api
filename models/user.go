@@ -8,9 +8,10 @@ import (
 type Users []User
 
 type User struct {
-	ID       string `json:"id"`
-	Username string `json:"username"`
-	Password string `json:"-"`
+	ID             int    `json:"id"`
+	Username       string `json:"username"`
+	Password       string `json:"-"`
+	OrganizationID int    `json:"organizationID"`
 }
 
 func (u *User) ValidatePassword(password string) error {
@@ -27,10 +28,10 @@ func (u *User) SetPassword(password string) error {
 }
 
 func (u *User) Save(client *sqlx.DB) error {
-	if u.ID != "" {
-		return client.Get(u, "UPDATE users SET username = $2, password = $3 WHERE id = $1 RETURNING *;", u.ID, u.Username, u.Password)
+	if u.ID != 0 {
+		return client.Get(u, "UPDATE users SET username = $2, password = $3, organizationID = $4 WHERE id = $1 RETURNING *;", u.ID, u.Username, u.Password, u.OrganizationID)
 	} else {
-		return client.Get(u, "INSERT INTO users (username, password) VALUES ($1, $2) RETURNING *;", u.Username, u.Password)
+		return client.Get(u, "INSERT INTO users (username, password, organizationID) VALUES ($1, $2, $3) RETURNING *;", u.Username, u.Password, u.OrganizationID)
 	}
 }
 

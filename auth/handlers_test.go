@@ -5,50 +5,68 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 
-	"gitlab.com/peragrin/api/db"
-	"gitlab.com/peragrin/api/fixture"
+	"gitlab.com/peragrin/api/models"
+
+	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/jmoiron/sqlx"
 )
 
-var config *Config
-
-func init() {
-	client, err := db.Client("0.0.0.0", "db", "secret", "db")
-	if err != nil {
-		panic(err)
+func TestLoginHandler(t *testing.T) {
+	tts := []lhtt{
+		lhtt{Credentials{"jteppinette", "jteppinette"}, models.User{ID: 1, Username: "jteppinette", OrganizationID: 1}, http.StatusOK},
+		lhtt{Credentials{"jteppinette", "bad"}, models.User{ID: 1, Username: "jteppinette", OrganizationID: 1}, http.StatusUnauthorized},
 	}
-	db.Migrate(client)
-	fixture.Initialize(client)
-
-	config = Init(client, "secret")
+	for _, tt := range tts {
+		tt.test(t)
+	}
 }
 
-func TestLoginHandler(t *testing.T) {
-	creds := Credentials{"jteppinette", "jteppinette"}
+type lhtt struct {
+	creds Credentials
+	user  models.User
+	code  int
+}
+
+func (v lhtt) test(t *testing.T) {
+	db, mock, _ := sqlmock.New()
+	defer db.Close()
+	config := Init(sqlx.NewDb(db, "sqlmock"), "secret")
+
+	v.user.SetPassword(v.user.Username)
+	columns := []string{"id", "username", "password", "organizationid"}
+	mock.ExpectQuery("^SELECT (.+) FROM users WHERE username = (.+);").
+		WithArgs(v.creds.Username).
+		WillReturnRows(sqlmock.NewRows(columns).AddRow(v.user.ID, v.user.Username, v.user.Password, v.user.OrganizationID))
 
 	var b bytes.Buffer
-	json.NewEncoder(&b).Encode(creds)
+	json.NewEncoder(&b).Encode(v.creds)
 	r, _ := http.NewRequest("POST", "", &b)
 	w := httptest.NewRecorder()
 	config.LoginHandler(w, r)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("expected code to be 200, got %d", w.Code)
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("unmet expectation error: %s", err)
 	}
 
-	var result map[string]interface{}
-	json.NewDecoder(w.Body).Decode(&result)
-	if result["username"] != creds.Username {
-		t.Errorf("expected username to be %s, got %v", creds.Username, result["username"])
+	if w.Code != v.code {
+		t.Errorf("expected code to be %d, got %d:%v", v.code, w.Code, w.Body)
 	}
-	if result["token"] == nil {
-		t.Error("expected token to be non-nil, got nil")
+
+	// If we are testing a failure case, then return early.
+	if v.code != http.StatusOK {
+		return
 	}
-	if result["organizationID"] == nil {
-		t.Error("expected organizationID to be non-nil, got nil")
+
+	var au AuthUser
+	json.NewDecoder(w.Body).Decode(&au)
+	v.user.Password = ""
+	if !reflect.DeepEqual(au.User, v.user) {
+		t.Errorf("expected user to be %v, got %v", v.user, au.User)
 	}
-	if result["id"] == nil {
-		t.Error("expected id to be non-nil, got nil")
+	if au.Token == "" {
+		t.Errorf("expected token to not be '', got %s", au.Token)
 	}
 }

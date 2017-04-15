@@ -20,6 +20,11 @@ func (c *Config) UserHandler(w http.ResponseWriter, r *http.Request) {
 	service.Error(w, http.StatusUnauthorized, errAuthenticationRequired)
 }
 
+type AuthUser struct {
+	Token string `json:"token"`
+	models.User
+}
+
 func (c *Config) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	creds := Credentials{}
 	err := json.NewDecoder(r.Body).Decode(&creds)
@@ -40,10 +45,7 @@ func (c *Config) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rend(w, http.StatusOK, struct {
-		Token string `json:"token"`
-		models.User
-	}{str, user})
+	rend(w, http.StatusOK, AuthUser{str, user})
 }
 
 func (c *Config) RequiredMiddleware(h http.Handler) http.Handler {

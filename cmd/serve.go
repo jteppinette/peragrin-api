@@ -31,7 +31,7 @@ func serve() {
 	users := users.Init(client)
 
 	base := alice.New(handlers.RecoveryHandler(handlers.PrintRecoveryStack(true)), logging)
-	authenticated := base.Append(auth.RequiredMiddleware)
+	authenticated := base.Append(auth.RequireAuthMiddleware)
 
 	r := mux.NewRouter()
 	r.Handle("/login", base.ThenFunc(auth.LoginHandler))
@@ -42,6 +42,7 @@ func serve() {
 	http.ListenAndServe(fmt.Sprintf(":%s", viper.GetString("PORT")), r)
 }
 
+// Serve instantiates the API server.
 var Serve *cobra.Command
 
 func init() {

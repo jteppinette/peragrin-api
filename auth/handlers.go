@@ -2,57 +2,69 @@ package auth
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/context"
 	"gitlab.com/peragrin/api/models"
-	"gitlab.com/peragrin/api/service"
 )
 
+// UserHandler returns the currently authenticated user. To function properly,
+// a preceding middleware must add the "user" key to the request context.
 func (c *Config) UserHandler(w http.ResponseWriter, r *http.Request) {
 	if user, ok := context.GetOk(r, "user"); ok {
 		rend(w, http.StatusOK, user)
 		return
 	}
-	service.Error(w, http.StatusUnauthorized, errAuthenticationRequired)
+	// errAuthenticateRequired
+	rend(w, http.StatusUnauthorized, nil)
 }
 
-type AuthUser struct {
+type authUser struct {
 	Token string `json:"token"`
 	models.User
 }
 
+// LoginHandler reads JSON encoded username and password from the provided request
+// and attempts to authenticate these credentials.
+// If succesful, an authUser object will be returned to the client.
 func (c *Config) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	creds := Credentials{}
 	err := json.NewDecoder(r.Body).Decode(&creds)
 	if err != nil {
-		service.Error(w, http.StatusBadRequest, errBadCredentialsFormat)
+		// errBadCredentialsFormat
+		rend(w, http.StatusBadRequest, nil)
 		return
 	}
 
 	user, err := creds.Authenticate(c)
 	if err != nil {
-		service.Error(w, http.StatusUnauthorized, err)
+		// err
+		rend(w, http.StatusUnauthorized, nil)
 		return
 	}
 
 	str, err := token(c.TokenSecret, user)
 	if err != nil {
-		service.Error(w, http.StatusUnauthorized, err)
+		// err
+		rend(w, http.StatusUnauthorized, nil)
 		return
 	}
 
-	rend(w, http.StatusOK, AuthUser{str, user})
+	rend(w, http.StatusOK, authUser{str, user})
 }
 
-func (c *Config) RequiredMiddleware(h http.Handler) http.Handler {
+// RequireAuthMiddleware attempts to authenticate the incoming request using
+// Basic and JWT authentication strategies. If successful, a "user" key will be
+// added to the request context. Otherwise, an HTTP Unauthorized will be
+// returned to the client.
+func (c *Config) RequireAuthMiddleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authorization := r.Header.Get("Authorization")
 		if authorization == "" {
-			service.Error(w, http.StatusUnauthorized, errAuthenticationRequired)
+			// errAuthenticationRequired
+			rend(w, http.StatusUnauthorized, nil)
 			return
 		}
 
@@ -62,20 +74,23 @@ func (c *Config) RequiredMiddleware(h http.Handler) http.Handler {
 				return []byte(c.TokenSecret), nil
 			})
 			if err != nil {
-				service.Error(w, http.StatusUnauthorized, fmt.Errorf("%v: %v", errJWTAuth, err))
+				// fmt.Errorf("%v: %v", errJWTAuth, err)
+				rend(w, http.StatusUnauthorized, nil)
 				return
 			}
 			user = token.Claims.(*Claims).User
 		} else {
 			username, password, ok := r.BasicAuth()
 			if !ok {
-				service.Error(w, http.StatusBadRequest, fmt.Errorf("%v: %v", errBasicAuth, errBadCredentialsFormat))
+				// fmt.Errorf("%v: %v", errBasicAuth, errBadCredentialsFormat))
+				rend(w, http.StatusBadRequest, nil)
 				return
 			}
 			var err error
 			user, err = Credentials{username, password}.Authenticate(c)
 			if err != nil {
-				service.Error(w, http.StatusUnauthorized, fmt.Errorf("%v: %v", errBasicAuth, err))
+				// fmt.Errorf("%v: %v", errBasicAuth, err)
+				rend(w, http.StatusUnauthorized, nil)
 				return
 			}
 		}

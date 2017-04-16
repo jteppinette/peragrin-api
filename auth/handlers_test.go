@@ -60,7 +60,7 @@ func (v lhtt) test(t *testing.T) {
 		return
 	}
 
-	var au AuthUser
+	var au authUser
 	json.NewDecoder(w.Body).Decode(&au)
 	v.user.Password = ""
 	if !reflect.DeepEqual(au.User, v.user) {

@@ -7,4 +7,4 @@ COPY . /go/src/gitlab.com/peragrin/api
 WORKDIR /go/src/gitlab.com/peragrin/api
 RUN go install
 
-CMD ["go-json-api-seed", "serve"]
+CMD ["api", "serve"]

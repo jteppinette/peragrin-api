@@ -15,5 +15,5 @@ func (c *Config) ListHandler(r *http.Request) *service.Response {
 	if err != nil {
 		return service.NewResponse(errors.Wrap(err, errListUsers.Error()), http.StatusBadRequest, nil)
 	}
-	return service.NewResponse(nil, http.StatusBadRequest, v)
+	return service.NewResponse(nil, http.StatusOK, v)
 }

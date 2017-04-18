@@ -12,20 +12,6 @@ var (
 	rend = render.New().JSON
 )
 
-// Response represents the return value to the Handler type.
-// This struct encapsulates the information need to log and write
-// at the end of a request/response cycle.
-type Response struct {
-	Error error
-	Code  int
-	Data  interface{}
-}
-
-// NewResponse returns an initialized response pointer.
-func NewResponse(err error, code int, data interface{}) *Response {
-	return &Response{err, code, data}
-}
-
 // Handler overrides the typical http.Handler interface with the Response
 // return value. This allows the types ServeHTTP function to handle the Response
 // in a single place providing standardized logging and response writing.

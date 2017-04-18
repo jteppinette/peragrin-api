@@ -2,7 +2,9 @@ package service
 
 import (
 	"net/http"
+	"time"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/unrolled/render"
 )
 
@@ -34,6 +36,8 @@ type Handler func(r *http.Request) *Response
 // If the response or response data is nil, an empty text/html response will
 // be returned. Otherwise, the response data will be written as encoded JSON.
 func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	start := time.Now()
+
 	response := h(r)
 
 	// If the response is nil, then use http.StatusOK as the default HTTP code.
@@ -42,6 +46,23 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		code = http.StatusOK
 	} else {
 		code = response.Code
+	}
+
+	// Log the the outgoing request/response.
+	fields := log.Fields{
+		"code":     code,
+		"method":   r.Method,
+		"url":      r.URL.String(),
+		"delta-ns": time.Now().Sub(start).Nanoseconds(),
+	}
+	if ip := getIPAddress(r); ip != "" {
+		fields["ip"] = ip
+	}
+	if response.Error != nil {
+		fields["err"] = response.Error
+		log.WithFields(fields).Error("access-log")
+	} else {
+		log.WithFields(fields).Info("access-log")
 	}
 
 	// If the response or response data is nil, then write the calculated code

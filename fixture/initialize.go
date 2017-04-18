@@ -1,8 +1,7 @@
 package fixture
 
 import (
-	"log"
-
+	log "github.com/Sirupsen/logrus"
 	"github.com/jmoiron/sqlx"
 	"gitlab.com/peragrin/api/models"
 )
@@ -21,29 +20,28 @@ var organizations = []models.Organization{
 	models.Organization{Name: "Papa John's Pizza", Address: "100 Peachtree Place", IsLeader: false},
 }
 
+// Initialize loads fixture data intot the current database. Any previously
+// uploaded data will be deleted.
 func Initialize(client *sqlx.DB) error {
 
-	log.Printf("\nCommunities\n------------------------------")
 	if _, err := client.Exec("DELETE FROM communities"); err != nil {
 		return err
 	}
-	for i, _ := range communities {
+	for i := range communities {
 		community := &(communities[i])
 		if err := community.Save(client); err != nil {
 			return err
 		}
-		log.Printf("%+v", community)
+		log.Infof("Created Community: %+v", community)
 	}
-	log.Print()
 
-	log.Printf("\nOrganizations & Users\n----------------------------")
 	if _, err := client.Exec("DELETE FROM organizations"); err != nil {
 		return err
 	}
 	if _, err := client.Exec("DELETE FROM users"); err != nil {
 		return err
 	}
-	for i, _ := range organizations {
+	for i := range organizations {
 		organization := &(organizations[i])
 		organization.CommunityID = communities[0].ID
 		if err := organization.Save(client); err != nil {
@@ -59,11 +57,8 @@ func Initialize(client *sqlx.DB) error {
 			return err
 		}
 
-		log.Printf("%+v", organization)
-		log.Printf("\t%+v", user)
-		log.Print()
+		log.Infof("Created Organization: %+v", organization)
+		log.Infof("Created User: %+v", user)
 	}
-	log.Print()
-
 	return nil
 }

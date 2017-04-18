@@ -2,11 +2,9 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 	"net/http"
-	"os"
 
-	"github.com/gorilla/handlers"
+	log "github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -17,11 +15,9 @@ import (
 	"gitlab.com/peragrin/api/users"
 )
 
-func logging(h http.Handler) http.Handler {
-	return handlers.LoggingHandler(os.Stdout, h)
-}
-
 func serve() {
+	log.SetFormatter(&log.JSONFormatter{})
+
 	client, err := db.Client(viper.GetString("DB_HOST"), viper.GetString("DB_USER"), viper.GetString("DB_PASSWORD"), viper.GetString("DB_NAME"))
 	if err != nil {
 		log.Fatal(err)
@@ -35,7 +31,7 @@ func serve() {
 	r.Handle("/user", auth.RequiredMiddleware(auth.UserHandler))
 	r.Handle("/users", auth.RequiredMiddleware(users.ListHandler))
 
-	log.Printf("initializing server: %s", viper.GetString("PORT"))
+	log.Infof("initializing server: %s", viper.GetString("PORT"))
 	http.ListenAndServe(fmt.Sprintf(":%s", viper.GetString("PORT")), r)
 }
 

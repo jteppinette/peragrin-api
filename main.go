@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
@@ -17,7 +17,6 @@ var cfp string
 
 func init() {
 	log.SetOutput(os.Stdout)
-	log.SetFlags(0)
 }
 
 func main() {
@@ -27,7 +26,7 @@ func main() {
 			if err := viper.ReadInConfig(); err != nil {
 				log.Fatal(err)
 			}
-			log.Printf("read configuration file: %s", cfp)
+			log.Infof("read configuration file: %s", cfp)
 		}
 		viper.AutomaticEnv()
 	})
@@ -37,7 +36,7 @@ func main() {
 		Short: fmt.Sprintf("%s is a simple api that authentication endpoints and an authenticated resource", program),
 	}
 
-	root.PersistentFlags().StringVarP(&cfp, "config", "c", "", fmt.Sprintf("config file path", program))
+	root.PersistentFlags().StringVarP(&cfp, "config", "c", "", "config file path")
 
 	root.PersistentFlags().StringP("db-host", "", "0.0.0.0", "db host")
 	viper.BindPFlag("DB_HOST", root.PersistentFlags().Lookup("db-host"))

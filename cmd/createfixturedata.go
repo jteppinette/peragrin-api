@@ -1,8 +1,7 @@
 package cmd
 
 import (
-	"log"
-
+	log "github.com/Sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
@@ -16,13 +15,14 @@ func createfixturedata() {
 		log.Fatal(err)
 	}
 
-	log.Print("creating fixture data - this will remove all data from the database")
+	log.Info("creating fixture data - this will remove all data from the database")
 	if err := fixture.Initialize(client); err != nil {
 		log.Fatal(err)
 	}
-	log.Print("completed successfully")
+	log.Info("completed successfully")
 }
 
+// CreateFixtureData is a cobra command that hooks into the fixture.Initialize function.
 var CreateFixtureData *cobra.Command
 
 func init() {

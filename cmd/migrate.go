@@ -1,8 +1,7 @@
 package cmd
 
 import (
-	"log"
-
+	log "github.com/Sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
@@ -15,13 +14,14 @@ func migrate() {
 		log.Fatal(err)
 	}
 
-	log.Print("initializing migration")
+	log.Info("initializing migration")
 	if err := db.Migrate(client); err != nil {
 		log.Fatal(err)
 	}
-	log.Print("completed successfully")
+	log.Info("completed successfully")
 }
 
+// Migrate is a cobra command that hooks into the db.migrate function.
 var Migrate *cobra.Command
 
 func init() {

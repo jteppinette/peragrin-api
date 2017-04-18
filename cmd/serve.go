@@ -28,6 +28,7 @@ func serve() {
 
 	r := mux.NewRouter()
 	r.Handle("/login", service.Handler(auth.LoginHandler))
+	r.Handle("/register", service.Handler(auth.RegisterHandler))
 	r.Handle("/user", auth.RequiredMiddleware(auth.UserHandler))
 	r.Handle("/users", auth.RequiredMiddleware(users.ListHandler))
 

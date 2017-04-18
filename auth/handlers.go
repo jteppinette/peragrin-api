@@ -49,6 +49,27 @@ func (c *Config) LoginHandler(r *http.Request) *service.Response {
 	return service.NewResponse(nil, http.StatusOK, authUser{str, user})
 }
 
+// RegisterHandler creates a new user account and returns an authenticated user/token.
+func (c *Config) RegisterHandler(r *http.Request) *service.Response {
+	creds := Credentials{}
+	if err := json.NewDecoder(r.Body).Decode(&creds); err != nil {
+		return service.NewResponse(errors.Wrap(err, errBadCredentialsFormat.Error()), http.StatusBadRequest, nil)
+	}
+
+	u := models.User{Username: creds.Username}
+	u.SetPassword(creds.Password)
+	if err := u.Save(c.Client); err != nil {
+		return service.NewResponse(errors.Wrap(err, errRegistrationFailed.Error()), http.StatusBadRequest, nil)
+	}
+
+	str, err := token(c.TokenSecret, u, c.Clock)
+	if err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+
+	return service.NewResponse(nil, http.StatusOK, authUser{str, u})
+}
+
 // RequiredMiddleware attempts to authenticate the incoming request using
 // Basic and JWT authentication strategies. If successful, a "user" key will be
 // added to the request context. Otherwise, an HTTP Unauthorized will be

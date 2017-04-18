@@ -28,6 +28,13 @@ func main() {
 			}
 			log.Infof("read configuration file: %s", cfp)
 		}
+
+		level, err := log.ParseLevel(viper.GetString("LOG_LEVEL"))
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.SetLevel(level)
+
 		viper.AutomaticEnv()
 	})
 
@@ -49,6 +56,9 @@ func main() {
 
 	root.PersistentFlags().StringP("db-name", "", "db", "db name")
 	viper.BindPFlag("DB_NAME", root.PersistentFlags().Lookup("db-name"))
+
+	root.PersistentFlags().StringP("log-level", "l", "info", "log level [debug, info, warning, error, fatal, panic]")
+	viper.BindPFlag("LOG_LEVEL", root.PersistentFlags().Lookup("log-level"))
 
 	root.AddCommand(cmd.Migrate)
 	root.AddCommand(cmd.CreateFixtureData)

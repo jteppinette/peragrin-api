@@ -1,7 +1,10 @@
 package service
 
 import (
+	"fmt"
 	"net/http"
+	"net/http/httputil"
+	"strings"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -24,6 +27,13 @@ type Handler func(r *http.Request) *Response
 func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 
+	if log.GetLevel() == log.DebugLevel {
+		b, _ := httputil.DumpRequest(r, true)
+		log.WithFields(log.Fields{
+			"request": strings.Replace(string(b), "\r\n", " ", -1),
+		}).Debug("request dump")
+	}
+
 	response := h(r)
 
 	// If the response is nil, then use http.StatusOK as the default HTTP code.
@@ -41,14 +51,17 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		"url":      r.URL.String(),
 		"delta-ns": time.Now().Sub(start).Nanoseconds(),
 	}
+	if log.GetLevel() == log.DebugLevel {
+		fields["response-data"] = fmt.Sprintf("%+v", response.Data)
+	}
 	if ip := getIPAddress(r); ip != "" {
 		fields["ip"] = ip
 	}
 	if response.Error != nil {
 		fields["err"] = response.Error
-		log.WithFields(fields).Error("access-log")
+		log.WithFields(fields).Error("access log")
 	} else {
-		log.WithFields(fields).Info("access-log")
+		log.WithFields(fields).Info("access log")
 	}
 
 	// If the response or response data is nil, then write the calculated code

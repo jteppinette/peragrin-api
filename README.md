@@ -34,6 +34,7 @@ Any variables marked as `insecure: true` should be overriden before being added 
 * DB_PORT          `default: 5432`
 * PORT             `default: 8000`
 * TOKEN_SECRET     `default: token-secret, insecure: true`
+* LOG_LEVEL        `default: info`
 
 ### Docker
 

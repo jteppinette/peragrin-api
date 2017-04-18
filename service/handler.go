@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httputil"
+	"runtime/debug"
 	"strings"
 	"time"
 
@@ -25,6 +26,16 @@ type Handler func(r *http.Request) *Response
 // If the response or response data is nil, an empty text/html response will
 // be returned. Otherwise, the response data will be written as encoded JSON.
 func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	defer func() {
+		if err := recover(); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.WithFields(log.Fields{
+				"stack": strings.Replace(strings.Replace(string(debug.Stack()), "\n", " || ", -1), "\t", "", -1),
+				"error": err,
+			}).Error("panic")
+		}
+	}()
+
 	start := time.Now()
 
 	if log.GetLevel() == log.DebugLevel {

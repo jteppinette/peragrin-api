@@ -8,12 +8,12 @@ import (
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
-	"github.com/justinas/alice"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
 	"gitlab.com/peragrin/api/auth"
 	"gitlab.com/peragrin/api/db"
+	"gitlab.com/peragrin/api/service"
 	"gitlab.com/peragrin/api/users"
 )
 
@@ -30,13 +30,10 @@ func serve() {
 	auth := auth.Init(client, viper.GetString("TOKEN_SECRET"))
 	users := users.Init(client)
 
-	base := alice.New(handlers.RecoveryHandler(handlers.PrintRecoveryStack(true)), logging)
-	authenticated := base.Append(auth.RequireAuthMiddleware)
-
 	r := mux.NewRouter()
-	r.Handle("/login", base.ThenFunc(auth.LoginHandler))
-	r.Handle("/user", authenticated.ThenFunc(auth.UserHandler))
-	r.Handle("/users", authenticated.ThenFunc(users.ListHandler))
+	r.Handle("/login", service.Handler(auth.LoginHandler))
+	r.Handle("/user", auth.RequiredMiddleware(auth.UserHandler))
+	r.Handle("/users", auth.RequiredMiddleware(users.ListHandler))
 
 	log.Printf("initializing server: %s", viper.GetString("PORT"))
 	http.ListenAndServe(fmt.Sprintf(":%s", viper.GetString("PORT")), r)

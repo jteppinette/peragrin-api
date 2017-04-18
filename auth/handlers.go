@@ -7,18 +7,18 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/context"
+	"github.com/pkg/errors"
 	"gitlab.com/peragrin/api/models"
+	"gitlab.com/peragrin/api/service"
 )
 
 // UserHandler returns the currently authenticated user. To function properly,
 // a preceding middleware must add the "user" key to the request context.
-func (c *Config) UserHandler(w http.ResponseWriter, r *http.Request) {
+func (c *Config) UserHandler(r *http.Request) *service.Response {
 	if user, ok := context.GetOk(r, "user"); ok {
-		rend(w, http.StatusOK, user)
-		return
+		return service.NewResponse(nil, http.StatusOK, user)
 	}
-	// errAuthenticateRequired
-	rend(w, http.StatusUnauthorized, nil)
+	return service.NewResponse(errAuthenticationRequired, http.StatusUnauthorized, nil)
 }
 
 type authUser struct {
@@ -29,43 +29,35 @@ type authUser struct {
 // LoginHandler reads JSON encoded username and password from the provided request
 // and attempts to authenticate these credentials.
 // If succesful, an authUser object will be returned to the client.
-func (c *Config) LoginHandler(w http.ResponseWriter, r *http.Request) {
+func (c *Config) LoginHandler(r *http.Request) *service.Response {
 	creds := Credentials{}
 	err := json.NewDecoder(r.Body).Decode(&creds)
 	if err != nil {
-		// errBadCredentialsFormat
-		rend(w, http.StatusBadRequest, nil)
-		return
+		return service.NewResponse(errors.Wrap(err, errBadCredentialsFormat.Error()), http.StatusBadRequest, nil)
 	}
 
 	user, err := creds.Authenticate(c)
 	if err != nil {
-		// err
-		rend(w, http.StatusUnauthorized, nil)
-		return
+		return service.NewResponse(err, http.StatusUnauthorized, nil)
 	}
 
-	str, err := token(c.TokenSecret, user)
+	str, err := token(c.TokenSecret, user, c.Clock)
 	if err != nil {
-		// err
-		rend(w, http.StatusUnauthorized, nil)
-		return
+		return service.NewResponse(err, http.StatusUnauthorized, nil)
 	}
 
-	rend(w, http.StatusOK, authUser{str, user})
+	return service.NewResponse(nil, http.StatusOK, authUser{str, user})
 }
 
-// RequireAuthMiddleware attempts to authenticate the incoming request using
+// RequiredMiddleware attempts to authenticate the incoming request using
 // Basic and JWT authentication strategies. If successful, a "user" key will be
 // added to the request context. Otherwise, an HTTP Unauthorized will be
 // returned to the client.
-func (c *Config) RequireAuthMiddleware(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func (c *Config) RequiredMiddleware(h service.Handler) service.Handler {
+	return func(r *http.Request) *service.Response {
 		authorization := r.Header.Get("Authorization")
 		if authorization == "" {
-			// errAuthenticationRequired
-			rend(w, http.StatusUnauthorized, nil)
-			return
+			return service.NewResponse(errAuthenticationRequired, http.StatusUnauthorized, nil)
 		}
 
 		var user models.User
@@ -74,28 +66,24 @@ func (c *Config) RequireAuthMiddleware(h http.Handler) http.Handler {
 				return []byte(c.TokenSecret), nil
 			})
 			if err != nil {
-				// fmt.Errorf("%v: %v", errJWTAuth, err)
-				rend(w, http.StatusUnauthorized, nil)
-				return
+				return service.NewResponse(errors.Wrap(err, errJWTAuth.Error()), http.StatusUnauthorized, nil)
 			}
 			user = token.Claims.(*Claims).User
-		} else {
+		} else if strings.HasPrefix(authorization, "Basic ") {
 			username, password, ok := r.BasicAuth()
 			if !ok {
-				// fmt.Errorf("%v: %v", errBasicAuth, errBadCredentialsFormat))
-				rend(w, http.StatusBadRequest, nil)
-				return
+				return service.NewResponse(errors.Wrap(errBadCredentialsFormat, errBasicAuth.Error()), http.StatusBadRequest, nil)
 			}
 			var err error
 			user, err = Credentials{username, password}.Authenticate(c)
 			if err != nil {
-				// fmt.Errorf("%v: %v", errBasicAuth, err)
-				rend(w, http.StatusUnauthorized, nil)
-				return
+				return service.NewResponse(errors.Wrap(err, errBasicAuth.Error()), http.StatusUnauthorized, nil)
 			}
+		} else {
+			return service.NewResponse(errAuthenticationStrategyNotSupported, http.StatusUnauthorized, nil)
 		}
 
 		context.Set(r, "user", user)
-		h.ServeHTTP(w, r)
-	})
+		return h(r)
+	}
 }

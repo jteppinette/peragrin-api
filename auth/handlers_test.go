@@ -2,71 +2,189 @@ package auth
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"reflect"
+	"strings"
 	"testing"
+	"time"
 
 	"gitlab.com/peragrin/api/models"
+	"gitlab.com/peragrin/api/service"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/jmoiron/sqlx"
 )
 
+var now = time.Now()
+
+type mockClock struct{}
+
+func (mockClock) Now() time.Time {
+	return now
+}
+
 func TestLoginHandler(t *testing.T) {
-	tts := []lhtt{
-		lhtt{Credentials{"jteppinette", "jteppinette"}, models.User{ID: 1, Username: "jteppinette", OrganizationID: 1}, http.StatusOK},
-		lhtt{Credentials{"jteppinette", "bad"}, models.User{ID: 1, Username: "jteppinette", OrganizationID: 1}, http.StatusUnauthorized},
+	dbUser := models.User{Username: "jte", Password: "jte", OrganizationID: 1, ID: 1}
+	dbUser.SetPassword(dbUser.Username)
+
+	expectedResponseUser := models.User{Username: dbUser.Username, OrganizationID: dbUser.OrganizationID, ID: dbUser.ID}
+	expectedResponseToken, _ := token("secret", expectedResponseUser, mockClock{})
+
+	tests := []struct {
+		bytes    []byte
+		response service.Response
+	}{
+		{
+			[]byte(`{"username": "jte", "password": "jte"}`),
+			service.Response{nil, http.StatusOK, authUser{expectedResponseToken, expectedResponseUser}},
+		},
+		{
+			[]byte(`{"username": "jte", "password": "bob"}`),
+			service.Response{errInvalidCredentials, http.StatusUnauthorized, nil},
+		},
+		{
+			[]byte(`{"username": "unknown", "password": "bob"}`),
+			service.Response{errUserNotFound, http.StatusUnauthorized, nil},
+		},
+		{
+			[]byte(``),
+			service.Response{errBadCredentialsFormat, http.StatusBadRequest, nil},
+		},
 	}
-	for _, tt := range tts {
-		tt.test(t)
+
+	for _, test := range tests {
+		db, mock, _ := sqlmock.New()
+		defer db.Close()
+		config := Init(sqlx.NewDb(db, "sqlmock"), "secret")
+		config.Clock = mockClock{}
+
+		creds := Credentials{}
+		unmarshalErr := json.Unmarshal(test.bytes, &creds)
+
+		if unmarshalErr == nil {
+			expected := mock.ExpectQuery("^SELECT (.+) FROM users WHERE username = (.+);").WithArgs(creds.Username)
+			if creds.Username == dbUser.Username {
+				expected.WillReturnRows(sqlmock.NewRows([]string{"id", "username", "password", "organizationid"}).AddRow(dbUser.ID, dbUser.Username, dbUser.Password, dbUser.OrganizationID))
+			}
+		}
+
+		r, _ := http.NewRequest("", "", bytes.NewBuffer(test.bytes))
+		response := config.LoginHandler(r)
+
+		if unmarshalErr == nil {
+			if err := mock.ExpectationsWereMet(); err != nil {
+				t.Errorf("unmet expectation error: %s", err)
+			}
+		}
+
+		validateResponse(&test.response, response, t)
 	}
 }
 
-type lhtt struct {
-	creds Credentials
-	user  models.User
-	code  int
+func TestRequiredMiddleware(t *testing.T) {
+	dbUser := models.User{Username: "jte", Password: "jte", OrganizationID: 1, ID: 1}
+	dbUser.SetPassword(dbUser.Username)
+
+	expectedResponseUser := models.User{Username: dbUser.Username, OrganizationID: dbUser.OrganizationID, ID: dbUser.ID}
+
+	authenticatedJWT, _ := token("secret", expectedResponseUser, clock{})
+	unauthenticatedJWT, _ := token("bad-secret", expectedResponseUser, clock{})
+
+	tests := []struct {
+		header   http.Header
+		response service.Response
+	}{
+		{
+			http.Header{"Authorization": []string{fmt.Sprintf("Basic %s", basicAuth(dbUser.Username, dbUser.Username))}},
+			service.Response{nil, http.StatusOK, expectedResponseUser},
+		},
+		{
+			http.Header{"Authorization": []string{fmt.Sprintf("Basic %s", basicAuth(dbUser.Username, "bad-password"))}},
+			service.Response{errBasicAuth, http.StatusUnauthorized, nil},
+		},
+		{
+			http.Header{"Authorization": []string{fmt.Sprintf("Basic %s", "bad-format")}},
+			service.Response{errBadCredentialsFormat, http.StatusBadRequest, nil},
+		},
+		{
+			http.Header{"Authorization": []string{fmt.Sprintf("Bearer %s", authenticatedJWT)}},
+			service.Response{nil, http.StatusOK, expectedResponseUser},
+		},
+		{
+			http.Header{"Authorization": []string{fmt.Sprintf("Bearer %s", unauthenticatedJWT)}},
+			service.Response{errJWTAuth, http.StatusUnauthorized, nil},
+		},
+		{
+			http.Header{"Authorization": []string{"not-supported"}},
+			service.Response{errAuthenticationStrategyNotSupported, http.StatusUnauthorized, nil},
+		},
+		{
+			http.Header{},
+			service.Response{errAuthenticationRequired, http.StatusUnauthorized, nil},
+		},
+	}
+
+	for _, test := range tests {
+		db, mock, _ := sqlmock.New()
+		defer db.Close()
+		config := Init(sqlx.NewDb(db, "sqlmock"), "secret")
+
+		var expected *sqlmock.ExpectedQuery
+		if username, _, ok := parseBasicAuth(test.header.Get("Authorization")); ok {
+			expected = mock.ExpectQuery("^SELECT (.+) FROM users WHERE username = (.+);").WithArgs(username)
+			expected.WillReturnRows(sqlmock.NewRows([]string{"id", "username", "password", "organizationid"}).AddRow(dbUser.ID, dbUser.Username, dbUser.Password, dbUser.OrganizationID))
+		}
+
+		response := config.RequiredMiddleware(config.UserHandler)(&http.Request{Header: test.header})
+
+		if err := mock.ExpectationsWereMet(); expected != nil && err != nil {
+			t.Errorf("unmet expectation error: %s", err)
+		}
+
+		validateResponse(&test.response, response, t)
+	}
 }
 
-func (v lhtt) test(t *testing.T) {
-	db, mock, _ := sqlmock.New()
-	defer db.Close()
-	config := Init(sqlx.NewDb(db, "sqlmock"), "secret")
+func basicAuth(username, password string) string {
+	auth := username + ":" + password
+	return base64.StdEncoding.EncodeToString([]byte(auth))
+}
 
-	v.user.SetPassword(v.user.Username)
-	columns := []string{"id", "username", "password", "organizationid"}
-	mock.ExpectQuery("^SELECT (.+) FROM users WHERE username = (.+);").
-		WithArgs(v.creds.Username).
-		WillReturnRows(sqlmock.NewRows(columns).AddRow(v.user.ID, v.user.Username, v.user.Password, v.user.OrganizationID))
-
-	var b bytes.Buffer
-	json.NewEncoder(&b).Encode(v.creds)
-	r, _ := http.NewRequest("POST", "", &b)
-	w := httptest.NewRecorder()
-	config.LoginHandler(w, r)
-
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("unmet expectation error: %s", err)
-	}
-
-	if w.Code != v.code {
-		t.Errorf("expected code to be %d, got %d:%v", v.code, w.Code, w.Body)
-	}
-
-	// If we are testing a failure case, then return early.
-	if v.code != http.StatusOK {
+func parseBasicAuth(auth string) (username, password string, ok bool) {
+	const prefix = "Basic "
+	if !strings.HasPrefix(auth, prefix) {
 		return
 	}
-
-	var au authUser
-	json.NewDecoder(w.Body).Decode(&au)
-	v.user.Password = ""
-	if !reflect.DeepEqual(au.User, v.user) {
-		t.Errorf("expected user to be %v, got %v", v.user, au.User)
+	c, err := base64.StdEncoding.DecodeString(auth[len(prefix):])
+	if err != nil {
+		return
 	}
-	if au.Token == "" {
-		t.Errorf("expected token to not be '', got %s", au.Token)
+	cs := string(c)
+	s := strings.IndexByte(cs, ':')
+	if s < 0 {
+		return
+	}
+	return cs[:s], cs[s+1:], true
+}
+
+func getError(err error) string {
+	if err == nil {
+		return ""
+	}
+	return err.Error()
+}
+
+func validateResponse(expected *service.Response, actual *service.Response, t *testing.T) {
+	if actual.Code != expected.Code {
+		t.Errorf("expected response code to be %d, got %d", expected.Code, actual.Code)
+	}
+	if !reflect.DeepEqual(actual.Data, expected.Data) {
+		t.Errorf("expected response data to be %v, got %v", expected.Data, actual.Data)
+	}
+	if !strings.Contains(getError(actual.Error), getError(expected.Error)) {
+		t.Errorf("expected response error to contain '%s', got '%s'", getError(expected.Error), getError(actual.Error))
 	}
 }

@@ -27,14 +27,14 @@ func NewResponse(err error, code int, data interface{}) *Response {
 // Handler overrides the typical http.Handler interface with the Response
 // return value. This allows the types ServeHTTP function to handle the Response
 // in a single place providing standardized logging and response writing.
-type Handler func(w http.ResponseWriter, r *http.Request) *Response
+type Handler func(r *http.Request) *Response
 
 // ServeHTTP calls the handler's underlying function, and it will properly
 // handle the returned response.
 // If the response or response data is nil, an empty text/html response will
 // be returned. Otherwise, the response data will be written as encoded JSON.
 func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	response := h(w, r)
+	response := h(r)
 
 	// If the response is nil, then use http.StatusOK as the default HTTP code.
 	var code int

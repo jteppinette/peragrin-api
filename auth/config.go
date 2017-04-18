@@ -12,8 +12,9 @@ var (
 type Config struct {
 	Client      *sqlx.DB
 	TokenSecret string
+	Clock       timer
 }
 
 func Init(client *sqlx.DB, tokenSecret string) *Config {
-	return &Config{client, tokenSecret}
+	return &Config{client, tokenSecret, clock{}}
 }

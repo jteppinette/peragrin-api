@@ -14,7 +14,7 @@ func TestHandler(t *testing.T) {
 		bytes   []byte
 	}{
 		{
-			func(w http.ResponseWriter, r *http.Request) *Response {
+			func(r *http.Request) *Response {
 				data := struct {
 					Detail string `json:"detail"`
 				}{"hey"}
@@ -24,14 +24,14 @@ func TestHandler(t *testing.T) {
 			[]byte(`{"detail":"hey"}`),
 		},
 		{
-			func(w http.ResponseWriter, r *http.Request) *Response {
+			func(r *http.Request) *Response {
 				return NewResponse(nil, http.StatusOK, nil)
 			},
 			http.StatusOK,
 			nil,
 		},
 		{
-			func(w http.ResponseWriter, r *http.Request) *Response {
+			func(r *http.Request) *Response {
 				return nil
 			},
 			http.StatusOK,

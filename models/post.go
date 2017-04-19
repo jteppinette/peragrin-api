@@ -27,7 +27,7 @@ func ListPostsByCommunityID(id int, client *sqlx.DB) (Posts, error) {
 	posts := Posts{}
 	// TODO: Join the necessary tables to retreive all posts in all organizations
 	// with the given community id.
-	if err := client.Select(&posts, "SELECT * FROM posts ORDER BY createdAt;"); err != nil {
+	if err := client.Select(&posts, "SELECT * FROM posts ORDER BY createdAt DESC;"); err != nil {
 		return nil, err
 	}
 	return posts, nil

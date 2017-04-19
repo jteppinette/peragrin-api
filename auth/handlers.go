@@ -41,7 +41,7 @@ func (c *Config) LoginHandler(r *http.Request) *service.Response {
 		return service.NewResponse(err, http.StatusUnauthorized, nil)
 	}
 
-	str, err := token(c.TokenSecret, user, c.Clock)
+	str, err := token(c.TokenSecret, user, c.MapboxAPIKey, c.Clock)
 	if err != nil {
 		return service.NewResponse(err, http.StatusUnauthorized, nil)
 	}
@@ -64,7 +64,7 @@ func (c *Config) RegisterHandler(r *http.Request) *service.Response {
 	// TODO: IsLeader should only be set if this is the first organization in the community.
 	form.Organization.IsLeader = false
 
-	if form.Organization.Address != "" {
+	if form.Organization.Address != "" && c.MapboxAPIKey != "" {
 		if err := form.Organization.SetGeo(c.Geo); err != nil {
 			return service.NewResponse(errors.Wrap(err, errGeocodeFailed.Error()), http.StatusInternalServerError, nil)
 		}
@@ -80,7 +80,7 @@ func (c *Config) RegisterHandler(r *http.Request) *service.Response {
 		return service.NewResponse(errors.Wrap(err, errRegistrationFailed.Error()), http.StatusBadRequest, nil)
 	}
 
-	str, err := token(c.TokenSecret, u, c.Clock)
+	str, err := token(c.TokenSecret, u, c.MapboxAPIKey, c.Clock)
 	if err != nil {
 		return service.NewResponse(err, http.StatusBadRequest, nil)
 	}

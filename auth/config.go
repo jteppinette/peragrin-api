@@ -12,12 +12,13 @@ var (
 )
 
 type Config struct {
-	Client      *sqlx.DB
-	TokenSecret string
-	Clock       timer
-	Geo         geo.Geocoder
+	Client       *sqlx.DB
+	TokenSecret  string
+	Clock        timer
+	Geo          geo.Geocoder
+	MapboxAPIKey string
 }
 
 func Init(client *sqlx.DB, tokenSecret string, mapboxAPIKey string) *Config {
-	return &Config{client, tokenSecret, clock{}, mapbox.Geocoder(mapboxAPIKey)}
+	return &Config{client, tokenSecret, clock{}, mapbox.Geocoder(mapboxAPIKey), mapboxAPIKey}
 }

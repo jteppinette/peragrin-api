@@ -31,7 +31,7 @@ func TestLoginHandler(t *testing.T) {
 	dbUser.SetPassword(strings.Split(dbUser.Email, "@")[0])
 
 	expectedResponseUser := models.User{Email: dbUser.Email, OrganizationID: dbUser.OrganizationID, ID: dbUser.ID}
-	expectedResponseToken, _ := token("secret", expectedResponseUser, mockClock{})
+	expectedResponseToken, _ := token("secret", expectedResponseUser, "", mockClock{})
 
 	tests := []struct {
 		bytes    []byte
@@ -90,8 +90,8 @@ func TestRequiredMiddleware(t *testing.T) {
 
 	expectedResponseUser := models.User{Email: dbUser.Email, OrganizationID: dbUser.OrganizationID, ID: dbUser.ID}
 
-	authenticatedJWT, _ := token("secret", expectedResponseUser, clock{})
-	unauthenticatedJWT, _ := token("bad-secret", expectedResponseUser, clock{})
+	authenticatedJWT, _ := token("secret", expectedResponseUser, "", clock{})
+	unauthenticatedJWT, _ := token("bad-secret", expectedResponseUser, "", clock{})
 
 	tests := []struct {
 		header   http.Header

@@ -10,7 +10,9 @@ import (
 	"github.com/spf13/viper"
 
 	"gitlab.com/peragrin/api/auth"
+	"gitlab.com/peragrin/api/communities"
 	"gitlab.com/peragrin/api/db"
+	"gitlab.com/peragrin/api/organizations"
 	"gitlab.com/peragrin/api/service"
 	"gitlab.com/peragrin/api/users"
 )
@@ -25,12 +27,19 @@ func serve() {
 
 	auth := auth.Init(client, viper.GetString("TOKEN_SECRET"))
 	users := users.Init(client)
+	organizations := organizations.Init(client)
+	communities := communities.Init(client)
 
 	r := mux.NewRouter()
 	r.Handle("/login", service.Handler(auth.LoginHandler))
 	r.Handle("/register", service.Handler(auth.RegisterHandler))
 	r.Handle("/user", auth.RequiredMiddleware(auth.UserHandler))
+	r.Handle("/communities", service.Handler(communities.ListHandler))
+
 	r.Handle("/users", auth.RequiredMiddleware(users.ListHandler))
+
+	r.Handle("/organizations", auth.RequiredMiddleware(organizations.ListHandler))
+	r.Handle("/organizations/{organizationID:[0-9]+}", auth.RequiredMiddleware(organizations.GetHandler))
 
 	log.Infof("initializing server: %s", viper.GetString("PORT"))
 	http.ListenAndServe(fmt.Sprintf(":%s", viper.GetString("PORT")), r)

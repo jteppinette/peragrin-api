@@ -29,3 +29,11 @@ func ListOrganizations(client *sqlx.DB) (Organizations, error) {
 	}
 	return organizations, nil
 }
+
+func GetOrganizationByID(id int, client *sqlx.DB) (*Organization, error) {
+	o := &Organization{}
+	if err := client.Get(o, "SELECT * FROM organizations WHERE id = $1;", id); err != nil {
+		return nil, err
+	}
+	return o, nil
+}

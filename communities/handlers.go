@@ -21,7 +21,7 @@ func (c *Config) ListHandler(r *http.Request) *service.Response {
 }
 
 // ListOrganizationsHandler returns a response with all organizations
-// in a given community..
+// in a given community.
 func (c *Config) ListOrganizationsHandler(r *http.Request) *service.Response {
 	id, err := strconv.Atoi(mux.Vars(r)["communityID"])
 	if err != nil {
@@ -31,6 +31,21 @@ func (c *Config) ListOrganizationsHandler(r *http.Request) *service.Response {
 	v, err := models.ListOrganizationsByCommunityID(id, c.Client)
 	if err != nil {
 		return service.NewResponse(errors.Wrap(err, errListOrganizations.Error()), http.StatusBadRequest, nil)
+	}
+	return service.NewResponse(nil, http.StatusOK, v)
+}
+
+// ListPostsHandler returns a response with all posts
+// in a given community.
+func (c *Config) ListPostsHandler(r *http.Request) *service.Response {
+	id, err := strconv.Atoi(mux.Vars(r)["communityID"])
+	if err != nil {
+		return service.NewResponse(errors.Wrap(err, errCommunityIDRequired.Error()), http.StatusBadRequest, nil)
+	}
+
+	v, err := models.ListPostsByCommunityID(id, c.Client)
+	if err != nil {
+		return service.NewResponse(errors.Wrap(err, errListPosts.Error()), http.StatusBadRequest, nil)
 	}
 	return service.NewResponse(nil, http.StatusOK, v)
 }

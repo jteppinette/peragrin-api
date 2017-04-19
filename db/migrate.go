@@ -13,6 +13,12 @@ func Migrate(client *sqlx.DB) error {
 			password		varchar(60) NOT NULL,
 			organizationID	integer
 		);
+		CREATE TABLE IF NOT EXISTS posts (
+			id				SERIAL,
+			content			text,
+			organizationID	integer NOT NULL,
+			createdAt		timestamp default current_timestamp
+		);
 		CREATE TABLE IF NOT EXISTS communities (
 			id			SERIAL,
 			name		varchar(80) NOT NULL UNIQUE

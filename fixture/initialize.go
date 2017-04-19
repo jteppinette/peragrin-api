@@ -64,7 +64,13 @@ func Initialize(client *sqlx.DB) error {
 			return err
 		}
 
+		post := models.Post{OrganizationID: organization.ID, Content: "We just got setup with Peragrin!"}
+		if err := post.Save(client); err != nil {
+			return err
+		}
+
 		log.Infof("Created Organization: %+v", organization)
+		log.Infof("Created Post: %+v", post)
 		log.Infof("Created User: %+v", user)
 	}
 	return nil

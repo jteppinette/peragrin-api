@@ -59,8 +59,10 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	fields := log.Fields{
 		"code":     code,
 		"method":   r.Method,
-		"url":      r.URL.String(),
 		"delta-ns": time.Now().Sub(start).Nanoseconds(),
+	}
+	if r.URL != nil {
+		fields["url"] = r.URL.String()
 	}
 	if log.GetLevel() == log.DebugLevel {
 		fields["response-data"] = fmt.Sprintf("%+v", response.Data)
@@ -68,7 +70,7 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if ip := getIPAddress(r); ip != "" {
 		fields["ip"] = ip
 	}
-	if response.Error != nil {
+	if response != nil && response.Error != nil {
 		fields["err"] = response.Error
 		log.WithFields(fields).Error("access log")
 	} else {

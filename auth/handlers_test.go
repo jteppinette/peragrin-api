@@ -27,10 +27,10 @@ func (mockClock) Now() time.Time {
 }
 
 func TestLoginHandler(t *testing.T) {
-	dbUser := models.User{Username: "jte", Password: "jte", OrganizationID: 1, ID: 1}
-	dbUser.SetPassword(dbUser.Username)
+	dbUser := models.User{Email: "jte@jte.com", Password: "jte", OrganizationID: 1, ID: 1}
+	dbUser.SetPassword(strings.Split(dbUser.Email, "@")[0])
 
-	expectedResponseUser := models.User{Username: dbUser.Username, OrganizationID: dbUser.OrganizationID, ID: dbUser.ID}
+	expectedResponseUser := models.User{Email: dbUser.Email, OrganizationID: dbUser.OrganizationID, ID: dbUser.ID}
 	expectedResponseToken, _ := token("secret", expectedResponseUser, mockClock{})
 
 	tests := []struct {
@@ -38,15 +38,15 @@ func TestLoginHandler(t *testing.T) {
 		response service.Response
 	}{
 		{
-			[]byte(`{"username": "jte", "password": "jte"}`),
+			[]byte(`{"email": "jte@jte.com", "password": "jte"}`),
 			service.Response{nil, http.StatusOK, authUser{expectedResponseToken, expectedResponseUser}},
 		},
 		{
-			[]byte(`{"username": "jte", "password": "bob"}`),
+			[]byte(`{"email": "jte@jte.com", "password": "bob"}`),
 			service.Response{errInvalidCredentials, http.StatusUnauthorized, nil},
 		},
 		{
-			[]byte(`{"username": "unknown", "password": "bob"}`),
+			[]byte(`{"email": "unknown@unknown.com", "password": "bob"}`),
 			service.Response{errUserNotFound, http.StatusUnauthorized, nil},
 		},
 		{
@@ -65,9 +65,9 @@ func TestLoginHandler(t *testing.T) {
 		unmarshalErr := json.Unmarshal(test.bytes, &creds)
 
 		if unmarshalErr == nil {
-			expected := mock.ExpectQuery("^SELECT (.+) FROM users WHERE username = (.+);").WithArgs(creds.Username)
-			if creds.Username == dbUser.Username {
-				expected.WillReturnRows(sqlmock.NewRows([]string{"id", "username", "password", "organizationid"}).AddRow(dbUser.ID, dbUser.Username, dbUser.Password, dbUser.OrganizationID))
+			expected := mock.ExpectQuery("^SELECT (.+) FROM users WHERE email = (.+);").WithArgs(creds.Email)
+			if creds.Email == dbUser.Email {
+				expected.WillReturnRows(sqlmock.NewRows([]string{"id", "email", "password", "organizationid"}).AddRow(dbUser.ID, dbUser.Email, dbUser.Password, dbUser.OrganizationID))
 			}
 		}
 
@@ -85,10 +85,10 @@ func TestLoginHandler(t *testing.T) {
 }
 
 func TestRequiredMiddleware(t *testing.T) {
-	dbUser := models.User{Username: "jte", Password: "jte", OrganizationID: 1, ID: 1}
-	dbUser.SetPassword(dbUser.Username)
+	dbUser := models.User{Email: "jte@jte.com", Password: "jte", OrganizationID: 1, ID: 1}
+	dbUser.SetPassword(strings.Split(dbUser.Email, "@")[0])
 
-	expectedResponseUser := models.User{Username: dbUser.Username, OrganizationID: dbUser.OrganizationID, ID: dbUser.ID}
+	expectedResponseUser := models.User{Email: dbUser.Email, OrganizationID: dbUser.OrganizationID, ID: dbUser.ID}
 
 	authenticatedJWT, _ := token("secret", expectedResponseUser, clock{})
 	unauthenticatedJWT, _ := token("bad-secret", expectedResponseUser, clock{})
@@ -98,11 +98,11 @@ func TestRequiredMiddleware(t *testing.T) {
 		response service.Response
 	}{
 		{
-			http.Header{"Authorization": []string{fmt.Sprintf("Basic %s", basicAuth(dbUser.Username, dbUser.Username))}},
+			http.Header{"Authorization": []string{fmt.Sprintf("Basic %s", basicAuth(dbUser.Email, strings.Split(dbUser.Email, "@")[0]))}},
 			service.Response{nil, http.StatusOK, expectedResponseUser},
 		},
 		{
-			http.Header{"Authorization": []string{fmt.Sprintf("Basic %s", basicAuth(dbUser.Username, "bad-password"))}},
+			http.Header{"Authorization": []string{fmt.Sprintf("Basic %s", basicAuth(dbUser.Email, "bad-password"))}},
 			service.Response{errBasicAuth, http.StatusUnauthorized, nil},
 		},
 		{
@@ -133,9 +133,9 @@ func TestRequiredMiddleware(t *testing.T) {
 		config := Init(sqlx.NewDb(db, "sqlmock"), "secret")
 
 		var expected *sqlmock.ExpectedQuery
-		if username, _, ok := parseBasicAuth(test.header.Get("Authorization")); ok {
-			expected = mock.ExpectQuery("^SELECT (.+) FROM users WHERE username = (.+);").WithArgs(username)
-			expected.WillReturnRows(sqlmock.NewRows([]string{"id", "username", "password", "organizationid"}).AddRow(dbUser.ID, dbUser.Username, dbUser.Password, dbUser.OrganizationID))
+		if email, _, ok := parseBasicAuth(test.header.Get("Authorization")); ok {
+			expected = mock.ExpectQuery("^SELECT (.+) FROM users WHERE email = (.+);").WithArgs(email)
+			expected.WillReturnRows(sqlmock.NewRows([]string{"id", "email", "password", "organizationid"}).AddRow(dbUser.ID, dbUser.Email, dbUser.Password, dbUser.OrganizationID))
 		}
 
 		response := config.RequiredMiddleware(config.UserHandler)(&http.Request{Header: test.header})

@@ -26,7 +26,7 @@ type authUser struct {
 	models.User
 }
 
-// LoginHandler reads JSON encoded username and password from the provided request
+// LoginHandler reads JSON encoded email and password from the provided request
 // and attempts to authenticate these credentials.
 // If succesful, an authUser object will be returned to the client.
 func (c *Config) LoginHandler(r *http.Request) *service.Response {
@@ -68,7 +68,7 @@ func (c *Config) RegisterHandler(r *http.Request) *service.Response {
 		return service.NewResponse(errors.Wrap(err, errRegistrationFailed.Error()), http.StatusBadRequest, nil)
 	}
 
-	u := models.User{Username: form.Username, OrganizationID: form.Organization.ID}
+	u := models.User{Email: form.Email, OrganizationID: form.Organization.ID}
 	u.SetPassword(form.Password)
 	if err := u.Save(c.Client); err != nil {
 		return service.NewResponse(errors.Wrap(err, errRegistrationFailed.Error()), http.StatusBadRequest, nil)
@@ -103,12 +103,12 @@ func (c *Config) RequiredMiddleware(h service.Handler) service.Handler {
 			}
 			user = token.Claims.(*Claims).User
 		} else if strings.HasPrefix(authorization, "Basic ") {
-			username, password, ok := r.BasicAuth()
+			email, password, ok := r.BasicAuth()
 			if !ok {
 				return service.NewResponse(errors.Wrap(errBadCredentialsFormat, errBasicAuth.Error()), http.StatusBadRequest, nil)
 			}
 			var err error
-			user, err = Credentials{username, password}.Authenticate(c)
+			user, err = Credentials{email, password}.Authenticate(c)
 			if err != nil {
 				return service.NewResponse(errors.Wrap(err, errBasicAuth.Error()), http.StatusUnauthorized, nil)
 			}

@@ -4,11 +4,12 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+// Migrate prepares the database.
 func Migrate(client *sqlx.DB) error {
 	schema := `
 		CREATE TABLE IF NOT EXISTS users (
 			id				SERIAL,
-			username		varchar(40) NOT NULL UNIQUE,
+			email			varchar(60) NOT NULL UNIQUE,
 			password		varchar(60) NOT NULL,
 			organizationID	integer
 		);

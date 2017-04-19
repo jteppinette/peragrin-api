@@ -1,14 +1,16 @@
 package fixture
 
 import (
+	"strings"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/jmoiron/sqlx"
 	"gitlab.com/peragrin/api/models"
 )
 
 var users = []models.User{
-	models.User{Username: "jteppinette"},
-	models.User{Username: "sajohnson"},
+	models.User{Email: "jteppinette@jteppinette.com"},
+	models.User{Email: "sajohnson@sajohnson.com"},
 }
 
 var communities = []models.Community{
@@ -49,7 +51,7 @@ func Initialize(client *sqlx.DB) error {
 		}
 
 		user := users[i]
-		if err := user.SetPassword(user.Username); err != nil {
+		if err := user.SetPassword(strings.Split(user.Email, "@")[0]); err != nil {
 			return err
 		}
 		user.OrganizationID = organization.ID

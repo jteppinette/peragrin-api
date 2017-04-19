@@ -64,6 +64,12 @@ func (c *Config) RegisterHandler(r *http.Request) *service.Response {
 	// TODO: IsLeader should only be set if this is the first organization in the community.
 	form.Organization.IsLeader = false
 
+	if form.Organization.Address != "" {
+		if err := form.Organization.SetGeo(c.Geo); err != nil {
+			return service.NewResponse(errors.Wrap(err, errGeocodeFailed.Error()), http.StatusInternalServerError, nil)
+		}
+	}
+
 	if err := form.Organization.Save(c.Client); err != nil {
 		return service.NewResponse(errors.Wrap(err, errRegistrationFailed.Error()), http.StatusBadRequest, nil)
 	}

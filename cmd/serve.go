@@ -25,7 +25,7 @@ func serve() {
 		log.Fatal(err)
 	}
 
-	auth := auth.Init(client, viper.GetString("TOKEN_SECRET"))
+	auth := auth.Init(client, viper.GetString("TOKEN_SECRET"), viper.GetString("MAPBOX_API_KEY"))
 	users := users.Init(client)
 	organizations := organizations.Init(client)
 	communities := communities.Init(client)

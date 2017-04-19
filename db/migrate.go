@@ -22,7 +22,9 @@ func Migrate(client *sqlx.DB) error {
 			name			varchar(80) NOT NULL UNIQUE,
 			address			varchar(80) NOT NULL,
 			isLeader		boolean,
-			communityID		integer
+			communityID		integer,
+			longitude		float,
+			latitude		float
 		);
 	`
 	if _, err := client.Exec(schema); err != nil {

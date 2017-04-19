@@ -35,6 +35,7 @@ Any variables marked as `insecure: true` should be overriden before being added 
 * PORT             `default: 8000`
 * TOKEN_SECRET     `default: token-secret, insecure: true`
 * LOG_LEVEL        `default: info`
+* MAPBOX_API_KEY   `default: `
 
 ### Docker
 

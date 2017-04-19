@@ -21,7 +21,8 @@ func Migrate(client *sqlx.DB) error {
 			id				SERIAL,
 			name			varchar(80) NOT NULL UNIQUE,
 			address			varchar(80) NOT NULL,
-			isLeader		boolean,
+			leader			boolean,
+			enabled			boolean,
 			communityID		integer,
 			longitude		float,
 			latitude		float

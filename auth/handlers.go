@@ -61,8 +61,11 @@ func (c *Config) RegisterHandler(r *http.Request) *service.Response {
 		return service.NewResponse(errors.Wrap(err, errBadCredentialsFormat.Error()), http.StatusBadRequest, nil)
 	}
 
-	// TODO: IsLeader should only be set if this is the first organization in the community.
-	form.Organization.IsLeader = false
+	// TODO: Leader should only be set if this is the first organization in the community.
+	form.Organization.Leader = false
+
+	// TODO: Enabled should only be initially true if this is the first organization in the community.
+	form.Organization.Enabled = false
 
 	if form.Organization.Address != "" && c.MapboxAPIKey != "" {
 		if err := form.Organization.SetGeo(c.Geo); err != nil {

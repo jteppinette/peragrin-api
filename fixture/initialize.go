@@ -20,8 +20,8 @@ var communities = []models.Community{
 }
 
 var organizations = []models.Organization{
-	models.Organization{Name: "Publix at The Plaza Midtown", Address: "950 W Peachtree St NE, Atlanta, GA 30309", IsLeader: true},
-	models.Organization{Name: "Bobby Dodd Stadium", Address: "North Avenue NW, Atlanta, GA 30313", IsLeader: false},
+	models.Organization{Name: "Metro Atlanta Chamber", Address: "191 Peachtree Tower, 191 Peachtree St NE #3400, Atlanta, GA 30303", Leader: true, Enabled: true},
+	models.Organization{Name: "Bobby Dodd Stadium", Address: "North Avenue NW, Atlanta, GA 30313", Leader: false},
 }
 
 // Initialize loads fixture data intot the current database. Any previously

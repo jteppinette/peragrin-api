@@ -12,7 +12,8 @@ type Organization struct {
 	ID          int     `json:"id"`
 	Name        string  `json:"name"`
 	Address     string  `json:"address"`
-	IsLeader    bool    `json:"isLeader"`
+	Leader      bool    `json:"leader"`
+	Enabled     bool    `json:"enabled"`
 	CommunityID int     `json:"communityID"`
 	Longitude   float64 `json:"longitude"`
 	Latitude    float64 `json:"latitude"`
@@ -36,9 +37,9 @@ func (o *Organization) SetGeo(geocoder geo.Geocoder) error {
 
 func (o *Organization) Save(client *sqlx.DB) error {
 	if o.ID != 0 {
-		return client.Get(o, "UPDATE organizations SET name = $2, address = $3, isLeader = $4, communityID = $4, longitude = $5, latitude = %6 WHERE id = $1 RETURNING *;", o.ID, o.Name, o.Address, o.IsLeader, o.CommunityID, o.Longitude, o.Latitude)
+		return client.Get(o, "UPDATE organizations SET name = $2, address = $3, leader = $4, enabled = $5, communityID = $6, longitude = $7, latitude = %8 WHERE id = $1 RETURNING *;", o.ID, o.Name, o.Address, o.Leader, o.Enabled, o.CommunityID, o.Longitude, o.Latitude)
 	} else {
-		return client.Get(o, "INSERT INTO organizations (name, address, isLeader, communityID, longitude, latitude) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *;", o.Name, o.Address, o.IsLeader, o.CommunityID, o.Longitude, o.Latitude)
+		return client.Get(o, "INSERT INTO organizations (name, address, leader, enabled, communityID, longitude, latitude) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *;", o.Name, o.Address, o.Leader, o.Enabled, o.CommunityID, o.Longitude, o.Latitude)
 	}
 }
 

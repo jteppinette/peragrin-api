@@ -33,3 +33,23 @@ func (c *Config) GetHandler(r *http.Request) *service.Response {
 	}
 	return service.NewResponse(nil, http.StatusOK, v)
 }
+
+// EnableHandler enabled a given organization.
+func (c *Config) EnableHandler(r *http.Request) *service.Response {
+	id, err := strconv.Atoi(mux.Vars(r)["organizationID"])
+	if err != nil {
+		return service.NewResponse(errors.Wrap(err, errOrganizationIDRequired.Error()), http.StatusBadRequest, nil)
+	}
+
+	v, err := models.GetOrganizationByID(id, c.Client)
+	if err != nil {
+		return service.NewResponse(errors.Wrap(err, errGetOrganization.Error()), http.StatusBadRequest, nil)
+	}
+
+	v.Enabled = true
+	if err := v.Save(c.Client); err != nil {
+		return service.NewResponse(errors.Wrap(err, errEnableOrganization.Error()), http.StatusInternalServerError, nil)
+	}
+
+	return service.NewResponse(nil, http.StatusOK, v)
+}

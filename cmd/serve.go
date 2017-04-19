@@ -42,6 +42,7 @@ func serve() {
 
 	r.Handle("/organizations", auth.RequiredMiddleware(organizations.ListHandler))
 	r.Handle("/organizations/{organizationID:[0-9]+}", auth.RequiredMiddleware(organizations.GetHandler))
+	r.Handle("/organizations/{organizationID:[0-9]+}/enable", auth.RequiredMiddleware(organizations.EnableHandler))
 
 	log.Infof("initializing server: %s", viper.GetString("PORT"))
 	http.ListenAndServe(fmt.Sprintf(":%s", viper.GetString("PORT")), r)

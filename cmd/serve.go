@@ -36,6 +36,8 @@ func serve() {
 	r.Handle("/user", auth.RequiredMiddleware(auth.UserHandler))
 	r.Handle("/communities", service.Handler(communities.ListHandler))
 
+	r.Handle("/communities/{communityID:[0-9]+}/organizations", auth.RequiredMiddleware(communities.ListOrganizationsHandler))
+
 	r.Handle("/users", auth.RequiredMiddleware(users.ListHandler))
 
 	r.Handle("/organizations", auth.RequiredMiddleware(organizations.ListHandler))

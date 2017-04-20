@@ -6,6 +6,7 @@ variables:
 stages:
   - build
   - release
+  - deploy
 
 variables:
   CONTAINER_BUILD_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME
@@ -30,5 +31,13 @@ release:
     - docker pull $CONTAINER_BUILD_IMAGE
     - docker tag $CONTAINER_BUILD_IMAGE $CONTAINER_RELEASE_IMAGE
     - docker push $CONTAINER_RELEASE_IMAGE
+  only:
+    - master
+
+deploy:
+  stage: deploy
+  script:
+    - docker pull $CI_REGISTRY/jteppinette/stackahoy
+    - docker run --rm $CI_REGISTRY/jteppinette/stackahoy deploy -t $STACKAHOY_TOKEN -b master -r 58f913a135e7e10900de8bda --skip-delivery
   only:
     - master

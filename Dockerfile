@@ -7,4 +7,5 @@ COPY . /go/src/gitlab.com/peragrin/api
 WORKDIR /go/src/gitlab.com/peragrin/api
 RUN go install
 
-CMD ["api", "serve"]
+ENTRYPOINT ["api"]
+CMD ["serve"]

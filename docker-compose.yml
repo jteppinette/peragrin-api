@@ -9,9 +9,10 @@ services:
     build: .
     ports:
       - 8000:80
+    env_file: .env
     environment:
       - DB_HOST=db
-      - DB_PORT=3306
+      - DB_PORT=5432
     links:
       - db
 

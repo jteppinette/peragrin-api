@@ -4,9 +4,7 @@ import (
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/codingsince1985/geo-golang/mapbox"
 	"github.com/jmoiron/sqlx"
-	"github.com/spf13/viper"
 	"gitlab.com/peragrin/api/models"
 )
 
@@ -20,8 +18,8 @@ var communities = []models.Community{
 }
 
 var organizations = []models.Organization{
-	models.Organization{Name: "Metro Atlanta Chamber", Address: "191 Peachtree Tower, 191 Peachtree St NE #3400, Atlanta, GA 30303", Leader: true, Enabled: true},
-	models.Organization{Name: "Bobby Dodd Stadium", Address: "North Avenue NW, Atlanta, GA 30313", Leader: false},
+	models.Organization{Name: "Metro Atlanta Chamber", Address: "191 Peachtree Tower, 191 Peachtree St NE #3400, Atlanta, GA 30303", Longitude: -84.38642, Latitude: 33.759115, Leader: true, Enabled: true},
+	models.Organization{Name: "Bobby Dodd Stadium", Address: "North Avenue NW, Atlanta, GA 30313", Longitude: -84.3903448, Latitude: 33.7712937, Leader: false},
 }
 
 // Initialize loads fixture data intot the current database. Any previously
@@ -48,9 +46,6 @@ func Initialize(client *sqlx.DB) error {
 	for i := range organizations {
 		organization := &(organizations[i])
 		organization.CommunityID = communities[0].ID
-		if err := organization.SetGeo(mapbox.Geocoder(viper.GetString("MAPBOX_API_KEY"))); err != nil {
-			return err
-		}
 		if err := organization.Save(client); err != nil {
 			return err
 		}

@@ -31,8 +31,7 @@ type authUser struct {
 // If succesful, an authUser object will be returned to the client.
 func (c *Config) LoginHandler(r *http.Request) *service.Response {
 	creds := Credentials{}
-	err := json.NewDecoder(r.Body).Decode(&creds)
-	if err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&creds); err != nil {
 		return service.NewResponse(errors.Wrap(err, errBadCredentialsFormat.Error()), http.StatusBadRequest, nil)
 	}
 
@@ -49,36 +48,15 @@ func (c *Config) LoginHandler(r *http.Request) *service.Response {
 	return service.NewResponse(nil, http.StatusOK, authUser{str, user})
 }
 
-type registrationForm struct {
-	Credentials
-	Organization models.Organization `json:"organization"`
-}
-
 // RegisterHandler creates a new user account and returns an authenticated user/token.
 func (c *Config) RegisterHandler(r *http.Request) *service.Response {
-	form := registrationForm{}
-	if err := json.NewDecoder(r.Body).Decode(&form); err != nil {
+	creds := Credentials{}
+	if err := json.NewDecoder(r.Body).Decode(&creds); err != nil {
 		return service.NewResponse(errors.Wrap(err, errBadCredentialsFormat.Error()), http.StatusBadRequest, nil)
 	}
 
-	// TODO: Leader should only be set if this is the first organization in the community.
-	form.Organization.Leader = false
-
-	// TODO: Enabled should only be initially true if this is the first organization in the community.
-	form.Organization.Enabled = false
-
-	if form.Organization.Address != "" && c.MapboxAPIKey != "" {
-		if err := form.Organization.SetGeo(c.Geo); err != nil {
-			return service.NewResponse(errors.Wrap(err, errGeocodeFailed.Error()), http.StatusInternalServerError, nil)
-		}
-	}
-
-	if err := form.Organization.Save(c.Client); err != nil {
-		return service.NewResponse(errors.Wrap(err, errRegistrationFailed.Error()), http.StatusBadRequest, nil)
-	}
-
-	u := models.User{Email: form.Email, OrganizationID: form.Organization.ID}
-	u.SetPassword(form.Password)
+	u := models.User{Email: creds.Email}
+	u.SetPassword(creds.Password)
 	if err := u.Save(c.Client); err != nil {
 		return service.NewResponse(errors.Wrap(err, errRegistrationFailed.Error()), http.StatusBadRequest, nil)
 	}

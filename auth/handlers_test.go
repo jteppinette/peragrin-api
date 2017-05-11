@@ -38,7 +38,9 @@ func TestLoginHandler(t *testing.T) {
 	}{
 		{
 			[]byte(`{"email": "jte@jte.com", "password": "jte"}`),
-			service.Response{nil, http.StatusOK, struct{ token string }{expectedResponseToken}},
+			service.Response{nil, http.StatusOK, struct {
+				Token string `json:"token"`
+			}{expectedResponseToken}},
 		},
 		{
 			[]byte(`{"email": "jte@jte.com", "password": "bob"}`),

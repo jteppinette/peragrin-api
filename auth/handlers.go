@@ -40,7 +40,9 @@ func (c *Config) LoginHandler(r *http.Request) *service.Response {
 		return service.NewResponse(err, http.StatusUnauthorized, nil)
 	}
 
-	return service.NewResponse(nil, http.StatusOK, struct{ token string }{str})
+	return service.NewResponse(nil, http.StatusOK, struct {
+		Token string `json:"token"`
+	}{str})
 }
 
 // RegisterHandler creates a new account and returns a account object.
@@ -61,7 +63,9 @@ func (c *Config) RegisterHandler(r *http.Request) *service.Response {
 		return service.NewResponse(err, http.StatusBadRequest, nil)
 	}
 
-	return service.NewResponse(nil, http.StatusOK, struct{ token string }{str})
+	return service.NewResponse(nil, http.StatusOK, struct {
+		Token string `json:"token"`
+	}{str})
 }
 
 // RequiredMiddleware attempts to authenticate the incoming request using

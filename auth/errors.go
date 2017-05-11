@@ -7,7 +7,7 @@ import (
 var (
 	errBadCredentialsFormat               = errors.New("bad credentials format")
 	errInvalidCredentials                 = errors.New("invalid credentials")
-	errUserNotFound                       = errors.New("user not found")
+	errAccountNotFound                    = errors.New("account not found")
 	errAuthenticationRequired             = errors.New("authentication required")
 	errAuthenticationStrategyNotSupported = errors.New("authentication strategy not supported")
 	errRegistrationFailed                 = errors.New("registration failed")

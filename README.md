@@ -19,7 +19,7 @@
 
 5. `go run main.go createfixturedata`
 
-6. `curl -u jteppinette:jteppinette localhost:8000/users`
+6. `curl -u jteppinette:jteppinette localhost:8000/account`
 
 ## Usage
 

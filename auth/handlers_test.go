@@ -27,11 +27,10 @@ func (mockClock) Now() time.Time {
 }
 
 func TestLoginHandler(t *testing.T) {
-	dbUser := models.User{Email: "jte@jte.com", Password: "jte", OrganizationID: 1, ID: 1}
-	dbUser.SetPassword(strings.Split(dbUser.Email, "@")[0])
+	dbAccount := models.Account{Email: "jte@jte.com", Password: "jte", ID: 1}
+	dbAccount.SetPassword(strings.Split(dbAccount.Email, "@")[0])
 
-	expectedResponseUser := models.User{Email: dbUser.Email, OrganizationID: dbUser.OrganizationID, ID: dbUser.ID}
-	expectedResponseToken, _ := token("secret", expectedResponseUser, "", mockClock{})
+	expectedResponseToken, _ := token("secret", models.Account{Email: dbAccount.Email, ID: dbAccount.ID}, "", mockClock{})
 
 	tests := []struct {
 		bytes    []byte
@@ -39,7 +38,7 @@ func TestLoginHandler(t *testing.T) {
 	}{
 		{
 			[]byte(`{"email": "jte@jte.com", "password": "jte"}`),
-			service.Response{nil, http.StatusOK, authUser{expectedResponseToken, expectedResponseUser}},
+			service.Response{nil, http.StatusOK, struct{ token string }{expectedResponseToken}},
 		},
 		{
 			[]byte(`{"email": "jte@jte.com", "password": "bob"}`),
@@ -47,7 +46,7 @@ func TestLoginHandler(t *testing.T) {
 		},
 		{
 			[]byte(`{"email": "unknown@unknown.com", "password": "bob"}`),
-			service.Response{errUserNotFound, http.StatusUnauthorized, nil},
+			service.Response{errAccountNotFound, http.StatusUnauthorized, nil},
 		},
 		{
 			[]byte(``),
@@ -65,9 +64,9 @@ func TestLoginHandler(t *testing.T) {
 		unmarshalErr := json.Unmarshal(test.bytes, &creds)
 
 		if unmarshalErr == nil {
-			expected := mock.ExpectQuery("^SELECT (.+) FROM users WHERE email = (.+);").WithArgs(creds.Email)
-			if creds.Email == dbUser.Email {
-				expected.WillReturnRows(sqlmock.NewRows([]string{"id", "email", "password", "organizationid"}).AddRow(dbUser.ID, dbUser.Email, dbUser.Password, dbUser.OrganizationID))
+			expected := mock.ExpectQuery("^SELECT (.+) FROM Account WHERE email = (.+);").WithArgs(creds.Email)
+			if creds.Email == dbAccount.Email {
+				expected.WillReturnRows(sqlmock.NewRows([]string{"id", "email", "password"}).AddRow(dbAccount.ID, dbAccount.Email, dbAccount.Password))
 			}
 		}
 
@@ -85,24 +84,24 @@ func TestLoginHandler(t *testing.T) {
 }
 
 func TestRequiredMiddleware(t *testing.T) {
-	dbUser := models.User{Email: "jte@jte.com", Password: "jte", OrganizationID: 1, ID: 1}
-	dbUser.SetPassword(strings.Split(dbUser.Email, "@")[0])
+	dbAccount := models.Account{Email: "jte@jte.com", Password: "jte", ID: 1}
+	dbAccount.SetPassword(strings.Split(dbAccount.Email, "@")[0])
 
-	expectedResponseUser := models.User{Email: dbUser.Email, OrganizationID: dbUser.OrganizationID, ID: dbUser.ID}
+	expectedResponseAccount := models.Account{Email: dbAccount.Email, ID: dbAccount.ID}
 
-	authenticatedJWT, _ := token("secret", expectedResponseUser, "", clock{})
-	unauthenticatedJWT, _ := token("bad-secret", expectedResponseUser, "", clock{})
+	authenticatedJWT, _ := token("secret", expectedResponseAccount, "", clock{})
+	unauthenticatedJWT, _ := token("bad-secret", expectedResponseAccount, "", clock{})
 
 	tests := []struct {
 		header   http.Header
 		response service.Response
 	}{
 		{
-			http.Header{"Authorization": []string{fmt.Sprintf("Basic %s", basicAuth(dbUser.Email, strings.Split(dbUser.Email, "@")[0]))}},
-			service.Response{nil, http.StatusOK, expectedResponseUser},
+			http.Header{"Authorization": []string{fmt.Sprintf("Basic %s", basicAuth(dbAccount.Email, strings.Split(dbAccount.Email, "@")[0]))}},
+			service.Response{nil, http.StatusOK, expectedResponseAccount},
 		},
 		{
-			http.Header{"Authorization": []string{fmt.Sprintf("Basic %s", basicAuth(dbUser.Email, "bad-password"))}},
+			http.Header{"Authorization": []string{fmt.Sprintf("Basic %s", basicAuth(dbAccount.Email, "bad-password"))}},
 			service.Response{errBasicAuth, http.StatusUnauthorized, nil},
 		},
 		{
@@ -111,7 +110,7 @@ func TestRequiredMiddleware(t *testing.T) {
 		},
 		{
 			http.Header{"Authorization": []string{fmt.Sprintf("Bearer %s", authenticatedJWT)}},
-			service.Response{nil, http.StatusOK, expectedResponseUser},
+			service.Response{nil, http.StatusOK, expectedResponseAccount},
 		},
 		{
 			http.Header{"Authorization": []string{fmt.Sprintf("Bearer %s", unauthenticatedJWT)}},
@@ -134,11 +133,11 @@ func TestRequiredMiddleware(t *testing.T) {
 
 		var expected *sqlmock.ExpectedQuery
 		if email, _, ok := parseBasicAuth(test.header.Get("Authorization")); ok {
-			expected = mock.ExpectQuery("^SELECT (.+) FROM users WHERE email = (.+);").WithArgs(email)
-			expected.WillReturnRows(sqlmock.NewRows([]string{"id", "email", "password", "organizationid"}).AddRow(dbUser.ID, dbUser.Email, dbUser.Password, dbUser.OrganizationID))
+			expected = mock.ExpectQuery("^SELECT (.+) FROM Account WHERE email = (.+);").WithArgs(email)
+			expected.WillReturnRows(sqlmock.NewRows([]string{"id", "email", "password"}).AddRow(dbAccount.ID, dbAccount.Email, dbAccount.Password))
 		}
 
-		response := config.RequiredMiddleware(config.UserHandler)(&http.Request{Header: test.header})
+		response := config.RequiredMiddleware(config.AccountHandler)(&http.Request{Header: test.header})
 
 		if err := mock.ExpectationsWereMet(); expected != nil && err != nil {
 			t.Errorf("unmet expectation error: %s", err)

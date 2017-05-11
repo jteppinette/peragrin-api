@@ -7,24 +7,13 @@ import (
 // Migrate prepares the database.
 func Migrate(client *sqlx.DB) error {
 	schema := `
-		CREATE TABLE IF NOT EXISTS users (
-			id				SERIAL,
+		CREATE TABLE IF NOT EXISTS Account (
+			id				SERIAL PRIMARY KEY,
 			email			varchar(60) NOT NULL UNIQUE,
-			password		varchar(60) NOT NULL,
-			organizationID	integer
+			password		varchar(60) NOT NULL
 		);
-		CREATE TABLE IF NOT EXISTS posts (
-			id				SERIAL,
-			content			text,
-			organizationID	integer NOT NULL,
-			createdAt		timestamp default current_timestamp
-		);
-		CREATE TABLE IF NOT EXISTS communities (
-			id			SERIAL,
-			name		varchar(80) NOT NULL UNIQUE
-		);
-		CREATE TABLE IF NOT EXISTS organizations (
-			id				SERIAL,
+		CREATE TABLE IF NOT EXISTS Organization (
+			id				SERIAL PRIMARY KEY,
 			name			varchar(80) NOT NULL UNIQUE,
 			address			varchar(80) NOT NULL,
 			leader			boolean,
@@ -32,6 +21,21 @@ func Migrate(client *sqlx.DB) error {
 			communityID		integer,
 			longitude		float,
 			latitude		float
+		);
+		CREATE TABLE IF NOT EXISTS Operator (
+			accountID			int REFERENCES Account ON DELETE CASCADE,
+			organizationID	int REFERENCES Organization ON DELETE CASCADE,
+			PRIMARY KEY (accountID, organizationID)
+		);
+		CREATE TABLE IF NOT EXISTS Community (
+			id			SERIAL PRIMARY KEY,
+			name		varchar(80) NOT NULL UNIQUE
+		);
+		CREATE TABLE IF NOT EXISTS Post (
+			id				SERIAL PRIMARY KEY,
+			content			text,
+			organizationID	integer NOT NULL REFERENCES Organization,
+			createdAt		timestamp DEFAULT current_timestamp
 		);
 	`
 	if _, err := client.Exec(schema); err != nil {

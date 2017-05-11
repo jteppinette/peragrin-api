@@ -12,65 +12,60 @@ import (
 	"gitlab.com/peragrin/api/service"
 )
 
-// UserHandler returns the currently authenticated user. To function properly,
-// a preceding middleware must add the "user" key to the request context.
-func (c *Config) UserHandler(r *http.Request) *service.Response {
-	if user, ok := context.GetOk(r, "user"); ok {
-		return service.NewResponse(nil, http.StatusOK, user)
+// AccountHandler returns the currently authenticated account. To function properly,
+// a preceding middleware must add the "account" key to the request context.
+func (c *Config) AccountHandler(r *http.Request) *service.Response {
+	if account, ok := context.GetOk(r, "account"); ok {
+		return service.NewResponse(nil, http.StatusOK, account)
 	}
 	return service.NewResponse(errAuthenticationRequired, http.StatusUnauthorized, nil)
 }
 
-type authUser struct {
-	Token string `json:"token"`
-	models.User
-}
-
-// LoginHandler reads JSON encoded email and password from the provided request
+// LoginHandler reads a JSON encoded email and password from the provided request
 // and attempts to authenticate these credentials.
-// If succesful, an authUser object will be returned to the client.
+// If succesful, a token object will be returned to the client.
 func (c *Config) LoginHandler(r *http.Request) *service.Response {
 	creds := Credentials{}
 	if err := json.NewDecoder(r.Body).Decode(&creds); err != nil {
 		return service.NewResponse(errors.Wrap(err, errBadCredentialsFormat.Error()), http.StatusBadRequest, nil)
 	}
 
-	user, err := creds.Authenticate(c)
+	account, err := creds.Authenticate(c)
 	if err != nil {
 		return service.NewResponse(err, http.StatusUnauthorized, nil)
 	}
 
-	str, err := token(c.TokenSecret, user, c.MapboxAPIKey, c.Clock)
+	str, err := token(c.TokenSecret, account, c.MapboxAPIKey, c.Clock)
 	if err != nil {
 		return service.NewResponse(err, http.StatusUnauthorized, nil)
 	}
 
-	return service.NewResponse(nil, http.StatusOK, authUser{str, user})
+	return service.NewResponse(nil, http.StatusOK, struct{ token string }{str})
 }
 
-// RegisterHandler creates a new user account and returns an authenticated user/token.
+// RegisterHandler creates a new account and returns a account object.
 func (c *Config) RegisterHandler(r *http.Request) *service.Response {
 	creds := Credentials{}
 	if err := json.NewDecoder(r.Body).Decode(&creds); err != nil {
 		return service.NewResponse(errors.Wrap(err, errBadCredentialsFormat.Error()), http.StatusBadRequest, nil)
 	}
 
-	u := models.User{Email: creds.Email}
-	u.SetPassword(creds.Password)
-	if err := u.Save(c.Client); err != nil {
+	a := models.Account{Email: creds.Email}
+	a.SetPassword(creds.Password)
+	if err := a.Save(c.Client); err != nil {
 		return service.NewResponse(errors.Wrap(err, errRegistrationFailed.Error()), http.StatusBadRequest, nil)
 	}
 
-	str, err := token(c.TokenSecret, u, c.MapboxAPIKey, c.Clock)
+	str, err := token(c.TokenSecret, a, c.MapboxAPIKey, c.Clock)
 	if err != nil {
 		return service.NewResponse(err, http.StatusBadRequest, nil)
 	}
 
-	return service.NewResponse(nil, http.StatusOK, authUser{str, u})
+	return service.NewResponse(nil, http.StatusOK, struct{ token string }{str})
 }
 
 // RequiredMiddleware attempts to authenticate the incoming request using
-// Basic and JWT authentication strategies. If successful, a "user" key will be
+// Basic and JWT authentication strategies. If successful, an "account" key will be
 // added to the request context. Otherwise, an HTTP Unauthorized will be
 // returned to the client.
 func (c *Config) RequiredMiddleware(h service.Handler) service.Handler {
@@ -80,7 +75,7 @@ func (c *Config) RequiredMiddleware(h service.Handler) service.Handler {
 			return service.NewResponse(errAuthenticationRequired, http.StatusUnauthorized, nil)
 		}
 
-		var user models.User
+		var account models.Account
 		if strings.HasPrefix(authorization, "Bearer ") {
 			token, err := jwt.ParseWithClaims(strings.Split(authorization, " ")[1], &Claims{}, func(token *jwt.Token) (interface{}, error) {
 				return []byte(c.TokenSecret), nil
@@ -88,14 +83,14 @@ func (c *Config) RequiredMiddleware(h service.Handler) service.Handler {
 			if err != nil {
 				return service.NewResponse(errors.Wrap(err, errJWTAuth.Error()), http.StatusUnauthorized, nil)
 			}
-			user = token.Claims.(*Claims).User
+			account = token.Claims.(*Claims).Account
 		} else if strings.HasPrefix(authorization, "Basic ") {
 			email, password, ok := r.BasicAuth()
 			if !ok {
 				return service.NewResponse(errors.Wrap(errBadCredentialsFormat, errBasicAuth.Error()), http.StatusBadRequest, nil)
 			}
 			var err error
-			user, err = Credentials{email, password}.Authenticate(c)
+			account, err = Credentials{email, password}.Authenticate(c)
 			if err != nil {
 				return service.NewResponse(errors.Wrap(err, errBasicAuth.Error()), http.StatusUnauthorized, nil)
 			}
@@ -103,7 +98,7 @@ func (c *Config) RequiredMiddleware(h service.Handler) service.Handler {
 			return service.NewResponse(errAuthenticationStrategyNotSupported, http.StatusUnauthorized, nil)
 		}
 
-		context.Set(r, "user", user)
+		context.Set(r, "account", account)
 		return h(r)
 	}
 }

@@ -20,14 +20,14 @@ func (clock) Now() time.Time {
 // Claims is the struct that is stored inside a JWT.
 type Claims struct {
 	jwt.StandardClaims
-	models.User
+	models.Account
 	MapboxAPIKey string `json:"mapboxAPIKey"`
 }
 
-func token(key string, user models.User, mapboxAPIKey string, c timer) (string, error) {
+func token(key string, account models.Account, mapboxAPIKey string, c timer) (string, error) {
 	return jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
 		jwt.StandardClaims{ExpiresAt: c.Now().Add(time.Hour * 24).Unix()},
-		user,
+		account,
 		mapboxAPIKey,
 	}).SignedString([]byte(key))
 }

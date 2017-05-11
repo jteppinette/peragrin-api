@@ -15,7 +15,6 @@ import (
 	"gitlab.com/peragrin/api/organizations"
 	"gitlab.com/peragrin/api/posts"
 	"gitlab.com/peragrin/api/service"
-	"gitlab.com/peragrin/api/users"
 )
 
 func serve() {
@@ -27,7 +26,6 @@ func serve() {
 	}
 
 	auth := auth.Init(client, viper.GetString("TOKEN_SECRET"), viper.GetString("MAPBOX_API_KEY"))
-	users := users.Init(client)
 	organizations := organizations.Init(client)
 	posts := posts.Init(client)
 	communities := communities.Init(client)
@@ -35,13 +33,11 @@ func serve() {
 	r := mux.NewRouter()
 	r.Handle("/login", service.Handler(auth.LoginHandler))
 	r.Handle("/register", service.Handler(auth.RegisterHandler))
-	r.Handle("/user", auth.RequiredMiddleware(auth.UserHandler))
+	r.Handle("/account", auth.RequiredMiddleware(auth.AccountHandler))
 	r.Handle("/communities", service.Handler(communities.ListHandler))
 
 	r.Handle("/communities/{communityID:[0-9]+}/organizations", auth.RequiredMiddleware(communities.ListOrganizationsHandler))
 	r.Handle("/communities/{communityID:[0-9]+}/posts", auth.RequiredMiddleware(communities.ListPostsHandler))
-
-	r.Handle("/users", auth.RequiredMiddleware(users.ListHandler))
 
 	r.Handle("/posts", auth.RequiredMiddleware(posts.CreateHandler))
 

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/gorilla/context"
 	"github.com/pkg/errors"
 
 	"gitlab.com/peragrin/api/models"
@@ -18,11 +17,12 @@ func (c *Config) CreateHandler(r *http.Request) *service.Response {
 		return service.NewResponse(errors.Wrap(err, errCreatePost.Error()), http.StatusBadRequest, nil)
 	}
 
-	user, ok := context.GetOk(r, "user")
-	if !ok {
-		return service.NewResponse(errAuthenticationRequired, http.StatusUnauthorized, nil)
-	}
-	form.OrganizationID = user.(models.User).OrganizationID
+	// TODO: pull organization id from url, because an account might be an operator of many organizations
+	// account, ok := context.GetOk(r, "account")
+	// if !ok {
+	// 	return service.NewResponse(errAuthenticationRequired, http.StatusUnauthorized, nil)
+	// }
+	// form.OrganizationID = account.(models.Account).OrganizationID
 	if err := form.Save(c.Client); err != nil {
 		return service.NewResponse(errors.Wrap(err, errCreatePost.Error()), http.StatusInternalServerError, nil)
 	}

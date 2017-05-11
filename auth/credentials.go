@@ -12,17 +12,17 @@ type Credentials struct {
 	Password string `json:"password"`
 }
 
-// Authenticate retrieves a user object using the provided credentials.
-// If the password hashes validate, then the user will be returned.
-func (creds Credentials) Authenticate(c *Config) (models.User, error) {
-	user, err := models.GetUserByEmail(creds.Email, c.Client)
+// Authenticate retrieves an account object using the provided credentials.
+// If the password hashes validate, then the account will be returned.
+func (creds Credentials) Authenticate(c *Config) (models.Account, error) {
+	account, err := models.GetAccountByEmail(creds.Email, c.Client)
 	if err != nil {
-		return models.User{}, errors.Wrap(err, errUserNotFound.Error())
+		return models.Account{}, errors.Wrap(err, errAccountNotFound.Error())
 	}
-	if err := user.ValidatePassword(creds.Password); err != nil {
-		return models.User{}, errors.Wrap(err, errInvalidCredentials.Error())
+	if err := account.ValidatePassword(creds.Password); err != nil {
+		return models.Account{}, errors.Wrap(err, errInvalidCredentials.Error())
 	}
 	// Do not allow the hashed password to be returned outside of this function.
-	user.Password = ""
-	return *user, nil
+	account.Password = ""
+	return *account, nil
 }

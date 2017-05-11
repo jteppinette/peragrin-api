@@ -13,15 +13,15 @@ type Community struct {
 
 func (c *Community) Save(client *sqlx.DB) error {
 	if c.ID != 0 {
-		return client.Get(c, "UPDATE communities SET name = $2 WHERE id = $1 RETURNING *;", c.ID, c.Name)
+		return client.Get(c, "UPDATE Community SET name = $2 WHERE id = $1 RETURNING *;", c.ID, c.Name)
 	} else {
-		return client.Get(c, "INSERT INTO communities (name) VALUES ($1) RETURNING *;", c.Name)
+		return client.Get(c, "INSERT INTO Community (name) VALUES ($1) RETURNING *;", c.Name)
 	}
 }
 
 func ListCommunities(client *sqlx.DB) (Communities, error) {
 	communities := Communities{}
-	if err := client.Select(&communities, "SELECT * FROM communities;"); err != nil {
+	if err := client.Select(&communities, "SELECT * FROM Community;"); err != nil {
 		return nil, err
 	}
 	return communities, nil

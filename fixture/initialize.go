@@ -8,9 +8,9 @@ import (
 	"gitlab.com/peragrin/api/models"
 )
 
-var users = []models.User{
-	models.User{Email: "jteppinette@jteppinette.com"},
-	models.User{Email: "sajohnson@sajohnson.com"},
+var accounts = []models.Account{
+	models.Account{Email: "jteppinette@jteppinette.com"},
+	models.Account{Email: "sajohnson@sajohnson.com"},
 }
 
 var communities = []models.Community{
@@ -26,7 +26,7 @@ var organizations = []models.Organization{
 // uploaded data will be deleted.
 func Initialize(client *sqlx.DB) error {
 
-	if _, err := client.Exec("DELETE FROM communities"); err != nil {
+	if _, err := client.Exec("DELETE FROM Community"); err != nil {
 		return err
 	}
 	for i := range communities {
@@ -37,10 +37,10 @@ func Initialize(client *sqlx.DB) error {
 		log.Infof("Created Community: %+v", community)
 	}
 
-	if _, err := client.Exec("DELETE FROM organizations"); err != nil {
+	if _, err := client.Exec("DELETE FROM Organization"); err != nil {
 		return err
 	}
-	if _, err := client.Exec("DELETE FROM users"); err != nil {
+	if _, err := client.Exec("DELETE FROM Account"); err != nil {
 		return err
 	}
 	for i := range organizations {
@@ -50,12 +50,15 @@ func Initialize(client *sqlx.DB) error {
 			return err
 		}
 
-		user := users[i]
-		if err := user.SetPassword(strings.Split(user.Email, "@")[0]); err != nil {
+		account := accounts[i]
+		if err := account.SetPassword(strings.Split(account.Email, "@")[0]); err != nil {
 			return err
 		}
-		user.OrganizationID = organization.ID
-		if err := user.Save(client); err != nil {
+		if err := account.Save(client); err != nil {
+			return err
+		}
+
+		if err := account.AddOperator(organization.ID, client); err != nil {
 			return err
 		}
 
@@ -66,7 +69,7 @@ func Initialize(client *sqlx.DB) error {
 
 		log.Infof("Created Organization: %+v", organization)
 		log.Infof("Created Post: %+v", post)
-		log.Infof("Created User: %+v", user)
+		log.Infof("Created Account: %+v", account)
 	}
 	return nil
 }

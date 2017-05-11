@@ -3,7 +3,9 @@ package posts
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
+	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 
 	"gitlab.com/peragrin/api/models"
@@ -17,12 +19,12 @@ func (c *Config) CreateHandler(r *http.Request) *service.Response {
 		return service.NewResponse(errors.Wrap(err, errCreatePost.Error()), http.StatusBadRequest, nil)
 	}
 
-	// TODO: pull organization id from url, because an account might be an operator of many organizations
-	// account, ok := context.GetOk(r, "account")
-	// if !ok {
-	// 	return service.NewResponse(errAuthenticationRequired, http.StatusUnauthorized, nil)
-	// }
-	// form.OrganizationID = account.(models.Account).OrganizationID
+	organizationID, err := strconv.Atoi(mux.Vars(r)["organizationID"])
+	if err != nil {
+		return service.NewResponse(errors.Wrap(err, errOrganizationIDRequired.Error()), http.StatusBadRequest, nil)
+	}
+
+	form.OrganizationID = organizationID
 	if err := form.Save(c.Client); err != nil {
 		return service.NewResponse(errors.Wrap(err, errCreatePost.Error()), http.StatusInternalServerError, nil)
 	}

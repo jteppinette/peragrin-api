@@ -39,10 +39,9 @@ func serve() {
 	r.Handle("/communities/{communityID:[0-9]+}/organizations", auth.RequiredMiddleware(communities.ListOrganizationsHandler))
 	r.Handle("/communities/{communityID:[0-9]+}/posts", auth.RequiredMiddleware(communities.ListPostsHandler))
 
-	r.Handle("/posts", auth.RequiredMiddleware(posts.CreateHandler))
-
 	r.Handle("/organizations", auth.RequiredMiddleware(organizations.ListHandler))
 	r.Handle("/organizations/{organizationID:[0-9]+}", auth.RequiredMiddleware(organizations.GetHandler))
+	r.Handle("/organizations/{organizationID:[0-9]+}/posts", auth.RequiredMiddleware(posts.CreateHandler))
 
 	log.Infof("initializing server: %s", viper.GetString("PORT"))
 	http.ListenAndServe(fmt.Sprintf(":%s", viper.GetString("PORT")), r)

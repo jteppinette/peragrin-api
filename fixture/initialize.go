@@ -50,6 +50,15 @@ var (
 		{midtown, bobbyDoddStadium, false},
 		{decatur, emoryPublix, false},
 	}
+
+	posts = []struct {
+		organization *models.Organization
+		items        []*models.Post
+	}{
+		{midtownAtlantaChamber, []*models.Post{{Content: "Hey! This is your midtown atlanta chamber, live on Peragrin!"}}},
+		{bobbyDoddStadium, []*models.Post{{Content: "Hey everyone! Come down to Bobby Dodd for the game today!"}, {Content: "Thats a win!"}}},
+		{emoryPublix, []*models.Post{{Content: "We have great specials today on subs! Come check it out!"}}},
+	}
 )
 
 // Initialize loads fixture data intot the current database. Any previously
@@ -100,6 +109,16 @@ func Initialize(client *sqlx.DB) error {
 	for _, operator := range operators {
 		if err := operator.account.AddOperator(operator.organization.ID, client); err != nil {
 			return err
+		}
+	}
+
+	for _, post := range posts {
+		for _, item := range post.items {
+			item.OrganizationID = post.organization.ID
+			if err := item.Save(client); err != nil {
+				return err
+			}
+			log.Infof("Created Post: %+v", item)
 		}
 	}
 

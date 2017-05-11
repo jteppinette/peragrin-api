@@ -8,48 +8,73 @@ import (
 	"gitlab.com/peragrin/api/models"
 )
 
-var accounts = []models.Account{
-	models.Account{Email: "jteppinette@jteppinette.com"},
-	models.Account{Email: "sajohnson@sajohnson.com"},
-}
+var (
+	jteppinette = &models.Account{Email: "jteppinette@jteppinette.com"}
+	sajohnson   = &models.Account{Email: "sajohnson@sajohnson.com"}
+	bjones      = &models.Account{Email: "bjones@bjones.com"}
 
-var communities = []models.Community{
-	models.Community{Name: "Midtown Atlanta"},
-}
+	midtown = &models.Community{Name: "Midtown Atlanta"}
+	decatur = &models.Community{Name: "Decatur Georgia"}
 
-var organizations = []models.Organization{
-	models.Organization{Name: "Metro Atlanta Chamber", Address: "191 Peachtree Tower, 191 Peachtree St NE #3400, Atlanta, GA 30303", Longitude: -84.38642, Latitude: 33.759115, Leader: true, Enabled: true},
-	models.Organization{Name: "Bobby Dodd Stadium", Address: "North Avenue NW, Atlanta, GA 30313", Longitude: -84.3903448, Latitude: 33.7712937, Leader: false},
-}
+	midtownAtlantaChamber = &models.Organization{Name: "Metro Atlanta Chamber", Address: "191 Peachtree Tower, 191 Peachtree St NE #3400, Atlanta, GA 30303", Longitude: -84.38642, Latitude: 33.759115}
+	bobbyDoddStadium      = &models.Organization{Name: "Bobby Dodd Stadium", Address: "North Avenue NW, Atlanta, GA 30313", Longitude: -84.3903448, Latitude: 33.7712937}
+	emoryPublix           = &models.Organization{Name: "Publix Super Market at Emory Commons", Address: "2155 N Decatur Rd, Decatur, GA 30033", Longitude: -84.30444, Latitude: 33.79023}
+
+	accounts = []*models.Account{
+		jteppinette, sajohnson, bjones,
+	}
+
+	communities = []*models.Community{
+		midtown, decatur,
+	}
+
+	organizations = []*models.Organization{
+		midtownAtlantaChamber, bobbyDoddStadium, emoryPublix,
+	}
+
+	operators = []struct {
+		account      *models.Account
+		organization *models.Organization
+	}{
+		{jteppinette, midtownAtlantaChamber},
+		{sajohnson, bobbyDoddStadium},
+		{bjones, emoryPublix},
+	}
+
+	memberships = []struct {
+		community       *models.Community
+		organization    *models.Organization
+		isAdministrator bool
+	}{
+		{midtown, midtownAtlantaChamber, true},
+		{midtown, bobbyDoddStadium, false},
+		{decatur, emoryPublix, false},
+	}
+)
 
 // Initialize loads fixture data intot the current database. Any previously
 // uploaded data will be deleted.
 func Initialize(client *sqlx.DB) error {
 
-	if _, err := client.Exec("DELETE FROM Community"); err != nil {
+	// Clear out the database.
+	if _, err := client.Exec(`
+			DELETE FROM Community;
+			DELETE FROM Organization;
+			DELETE FROM Account;
+			DELETE FROM Post;
+			DELETE FROM Membership;
+			DELETE FROM Operator;
+	`); err != nil {
 		return err
 	}
+
 	for i := range communities {
-		community := &(communities[i])
-		if err := community.Save(client); err != nil {
+		if err := communities[i].Save(client); err != nil {
 			return err
 		}
-		log.Infof("Created Community: %+v", community)
+		log.Infof("Created Community: %+v", communities[i])
 	}
-
-	if _, err := client.Exec("DELETE FROM Organization"); err != nil {
-		return err
-	}
-	if _, err := client.Exec("DELETE FROM Account"); err != nil {
-		return err
-	}
-	for i := range organizations {
-		organization := &(organizations[i])
-		organization.CommunityID = communities[0].ID
-		if err := organization.Save(client); err != nil {
-			return err
-		}
-
+	for i := range accounts {
 		account := accounts[i]
 		if err := account.SetPassword(strings.Split(account.Email, "@")[0]); err != nil {
 			return err
@@ -57,19 +82,26 @@ func Initialize(client *sqlx.DB) error {
 		if err := account.Save(client); err != nil {
 			return err
 		}
-
-		if err := account.AddOperator(organization.ID, client); err != nil {
-			return err
-		}
-
-		post := models.Post{OrganizationID: organization.ID, Content: "We just got setup with Peragrin!"}
-		if err := post.Save(client); err != nil {
-			return err
-		}
-
-		log.Infof("Created Organization: %+v", organization)
-		log.Infof("Created Post: %+v", post)
 		log.Infof("Created Account: %+v", account)
 	}
+	for i := range organizations {
+		if err := organizations[i].Save(client); err != nil {
+			return err
+		}
+		log.Infof("Created Organization: %+v", organizations[i])
+	}
+
+	for _, membership := range memberships {
+		if err := membership.organization.AddMembership(membership.community.ID, membership.isAdministrator, client); err != nil {
+			return err
+		}
+	}
+
+	for _, operator := range operators {
+		if err := operator.account.AddOperator(operator.organization.ID, client); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }

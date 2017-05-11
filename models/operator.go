@@ -14,7 +14,7 @@ type Operator struct {
 	OrganizationID int `json:"organizationID"`
 }
 
-// Save creates or updates the given operator in the database.
+// Save creates the given operator in the database.
 func (o *Operator) Save(client *sqlx.DB) error {
 	return client.Get(o, "INSERT INTO Operator (accountID, organizationID) VALUES ($1, $2) RETURNING *;", o.AccountID, o.OrganizationID)
 }

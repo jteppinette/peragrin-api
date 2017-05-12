@@ -12,4 +12,8 @@ var (
 
 	errOrganizationIDRequired = errors.New("organization id required")
 	errGeocode                = errors.New("geocode")
+
+	errAddOperator = errors.New("add operator")
+
+	errAuthenticationRequired = errors.New("authentication required")
 )

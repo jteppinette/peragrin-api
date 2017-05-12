@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/gorilla/context"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 
@@ -15,9 +16,14 @@ import (
 
 // CreateHandler saves a new organization to the database.
 func (c *Config) CreateHandler(r *http.Request) *service.Response {
+	account, ok := context.Get(r, "account").(models.Account)
+	if !ok {
+		return service.NewResponse(errAuthenticationRequired, http.StatusUnauthorized, nil)
+	}
+
 	form := models.Organization{}
 	if err := json.NewDecoder(r.Body).Decode(&form); err != nil {
-		return service.NewResponse(errors.Wrap(err, errCreateOrganization.Error()), http.StatusBadRequest, nil)
+		return service.NewResponse(err, http.StatusBadRequest, nil)
 	}
 
 	// If there is a geocode lookup failure, then log the failure. We
@@ -34,6 +40,10 @@ func (c *Config) CreateHandler(r *http.Request) *service.Response {
 
 	if err := form.Save(c.Client); err != nil {
 		return service.NewResponse(errors.Wrap(err, errCreateOrganization.Error()), http.StatusBadRequest, nil)
+	}
+
+	if err := form.AddOperator(account.ID, c.Client); err != nil {
+		return service.NewResponse(errors.Wrap(err, errAddOperator.Error()), http.StatusBadRequest, nil)
 	}
 
 	return service.NewResponse(nil, http.StatusCreated, form)

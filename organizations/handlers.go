@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 
@@ -19,8 +20,16 @@ func (c *Config) CreateHandler(r *http.Request) *service.Response {
 		return service.NewResponse(errors.Wrap(err, errCreateOrganization.Error()), http.StatusBadRequest, nil)
 	}
 
-	if err := form.SetGeo(form.Address, c.LocationIQAPIKey); err != nil {
-		return service.NewResponse(errors.Wrap(errors.Wrap(err, errGeocode.Error()), errCreateOrganization.Error()), http.StatusBadRequest, nil)
+	// If there is a geocode lookup failure, then log the failure. We
+	// will just let the user manually enter the coordinates.
+	if err := form.SetGeo(c.LocationIQAPIKey); err != nil {
+		logrus.WithFields(logrus.Fields{
+			"street":  form.Street,
+			"city":    form.City,
+			"state":   form.State,
+			"country": form.Country,
+			"zip":     form.Zip,
+		}).Error(errors.Wrap(err, errGeocode.Error()))
 	}
 
 	if err := form.Save(c.Client); err != nil {

@@ -16,9 +16,30 @@ var (
 	midtown = &models.Community{Name: "Midtown Atlanta"}
 	decatur = &models.Community{Name: "Decatur Georgia"}
 
-	midtownAtlantaChamber = &models.Organization{Name: "Metro Atlanta Chamber", Address: "191 Peachtree Tower, 191 Peachtree St NE #3400, Atlanta, GA 30303", Longitude: -84.38642, Latitude: 33.759115}
-	bobbyDoddStadium      = &models.Organization{Name: "Bobby Dodd Stadium", Address: "North Avenue NW, Atlanta, GA 30313", Longitude: -84.3903448, Latitude: 33.7712937}
-	emoryPublix           = &models.Organization{Name: "Publix Super Market at Emory Commons", Address: "2155 N Decatur Rd, Decatur, GA 30033", Longitude: -84.30444, Latitude: 33.79023}
+	midtownAtlantaChamber = &models.Organization{
+		Name: "Metro Atlanta Chamber",
+		Address: models.Address{
+			Street: "191 Peachtree St NE #3400", City: "Atlanta", State: "GA", Country: "United States", Zip: "30303",
+		},
+		Lon: -84.38642,
+		Lat: 33.759115,
+	}
+	bobbyDoddStadium = &models.Organization{
+		Name: "Bobby Dodd Stadium",
+		Address: models.Address{
+			Street: "North Avenue NW", City: "Atlanta", State: "GA", Country: "United States", Zip: "30313",
+		},
+		Lon: -84.3903448,
+		Lat: 33.7712937,
+	}
+	emoryPublix = &models.Organization{
+		Name: "Publix Super Market at Emory Commons",
+		Address: models.Address{
+			Street: "2155 N Decatur Rd", City: "Decatur", State: "GA", Country: "United States", Zip: "30033",
+		},
+		Lon: -84.30444,
+		Lat: 33.79023,
+	}
 
 	accounts = []*models.Account{
 		jteppinette, sajohnson, bjones,

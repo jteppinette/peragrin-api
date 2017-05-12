@@ -13,11 +13,15 @@ func Migrate(client *sqlx.DB) error {
 			password		varchar(60) NOT NULL
 		);
 		CREATE TABLE IF NOT EXISTS Organization (
-			id				SERIAL PRIMARY KEY,
-			name			varchar(80) NOT NULL UNIQUE,
-			address			varchar(80) NOT NULL,
-			longitude		float,
-			latitude		float
+			id		SERIAL PRIMARY KEY,
+			name	varchar(80) NOT NULL UNIQUE,
+			street	varchar(160) NOT NULL,
+			city	varchar(30) NOT NULL,
+			state	varchar(30) NOT NULL,
+			country	varchar(40) NOT NULL,
+			zip		varchar(20) NOT NULL,
+			lon		float,
+			lat		float
 		);
 		CREATE TABLE IF NOT EXISTS Operator (
 			accountID			int REFERENCES Account ON DELETE CASCADE,

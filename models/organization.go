@@ -15,58 +15,68 @@ type Organizations []Organization
 // Organization represents an organization that is registered in
 // the Peragrin system.
 type Organization struct {
-	ID        int     `json:"id"`
-	Name      string  `json:"name"`
-	Address   string  `json:"address"`
-	Longitude float64 `json:"longitude"`
-	Latitude  float64 `json:"latitude"`
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+	Address
+	Lon float64 `json:"lon"`
+	Lat float64 `json:"lat"`
 }
 
-type geocodes []geocode
-type geocode struct {
-	Lon string `json:"lon"`
-	Lat string `json:"lat"`
+// Address represents a physical location in the world.
+type Address struct {
+	Street  string `json:"street"`
+	City    string `json:"city"`
+	State   string `json:"state"`
+	Country string `json:"Country"`
+	Zip     string `json:"zip"`
 }
 
-func (code geocode) floats() (float64, float64) {
-	lon, _ := strconv.ParseFloat(code.Lon, 64)
-	lat, _ := strconv.ParseFloat(code.Lat, 64)
-	return lon, lat
-}
-
-// SetGeo does a reverse geo-code lookup to turn an address into coordinates.
-func (o *Organization) SetGeo(query, key string) error {
-	if o.Address == "" {
-		return errAddressRequired
-	}
-
-	r, err := http.Get(fmt.Sprintf("http://locationiq.org/v1/search.php?key=%s&format=json&q=%s&limit=1", key, query))
+func (a Address) geocode(key string) (float64, float64, error) {
+	r, err := http.Get(fmt.Sprintf("http://locationiq.org/v1/search.php?key=%s&format=json&limit=1&street=%s&city=%s&state=%s&country=%s&postalcode=%s", key, a.Street, a.City, a.State, a.Country, a.Zip))
 	if err != nil {
-		return err
+		return 0, 0, err
 	}
 	defer r.Body.Close()
 
 	if r.StatusCode != http.StatusOK {
-		return fmt.Errorf("expected response to be HTTP 200, received %s", r.Status)
+		return 0, 0, fmt.Errorf("expected response to be HTTP 200, received %s", r.Status)
 	}
 
-	codes := geocodes{}
+	codes := []struct {
+		Lon string `json:"lon"`
+		Lat string `json:"lat"`
+	}{}
 	if err := json.NewDecoder(r.Body).Decode(&codes); err != nil {
+		return 0, 0, err
+	}
+	for _, code := range codes {
+		lon, _ := strconv.ParseFloat(code.Lon, 64)
+		lat, _ := strconv.ParseFloat(code.Lat, 64)
+		return lon, lat, nil
+	}
+	return 0, 0, errGeocodeNotFound
+}
+
+// SetGeo does a reverse geo-code lookup to turn an address into coordinates.
+func (o *Organization) SetGeo(key string) error {
+	if o.Street == "" || o.City == "" || o.State == "" || o.Country == "" || o.Zip == "" {
+		return errAddressRequired
+	}
+
+	var err error
+	if o.Lon, o.Lat, err = o.geocode(key); err != nil {
 		return err
 	}
 
-	for _, code := range codes {
-		o.Longitude, o.Latitude = code.floats()
-	}
 	return nil
 }
 
 // Save creates or updates an organization based on the existence of an id.
 func (o *Organization) Save(client *sqlx.DB) error {
 	if o.ID != 0 {
-		return client.Get(o, "UPDATE Organization SET name = $2, address = $3, longitude = $7, latitude = $8 WHERE id = $1 RETURNING *;", o.ID, o.Name, o.Address, o.Longitude, o.Latitude)
+		return client.Get(o, "UPDATE Organization SET name = $2, street = $3, city = $4, state = $5, country = $6, zip = $7, lon = $8, lat = $9 WHERE id = $1 RETURNING *;", o.ID, o.Name, o.Street, o.City, o.State, o.Country, o.Zip, o.Lon, o.Lat)
 	}
-	return client.Get(o, "INSERT INTO Organization (name, address, longitude, latitude) VALUES ($1, $2, $3, $4) RETURNING *;", o.Name, o.Address, o.Longitude, o.Latitude)
+	return client.Get(o, "INSERT INTO Organization (name, street, city, state, country, zip, lon, lat) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *;", o.Name, o.Street, o.City, o.State, o.Country, o.Zip, o.Lon, o.Lat)
 }
 
 // AddOperator creates a relationship that defines a given account as

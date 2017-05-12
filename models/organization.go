@@ -1,9 +1,12 @@
 package models
 
 import (
-	geo "github.com/codingsince1985/geo-golang"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"strconv"
+
 	"github.com/jmoiron/sqlx"
-	"github.com/pkg/errors"
 )
 
 // Organizations is a list of organization structs.
@@ -19,20 +22,42 @@ type Organization struct {
 	Latitude  float64 `json:"latitude"`
 }
 
+type geocodes []geocode
+type geocode struct {
+	Lon string `json:"lon"`
+	Lat string `json:"lat"`
+}
+
+func (code geocode) floats() (float64, float64) {
+	lon, _ := strconv.ParseFloat(code.Lon, 64)
+	lat, _ := strconv.ParseFloat(code.Lat, 64)
+	return lon, lat
+}
+
 // SetGeo does a reverse geo-code lookup to turn an address into coordinates.
-func (o *Organization) SetGeo(geocoder geo.Geocoder) error {
+func (o *Organization) SetGeo(query, key string) error {
 	if o.Address == "" {
 		return errAddressRequired
 	}
-	location, err := geocoder.Geocode(o.Address)
+
+	r, err := http.Get(fmt.Sprintf("http://locationiq.org/v1/search.php?key=%s&format=json&q=%s&limit=1", key, query))
 	if err != nil {
-		return errors.Wrap(err, errGeo.Error())
+		return err
 	}
-	if location == nil || location.Lat == 0 || location.Lng == 0 {
-		return errGeo
+	defer r.Body.Close()
+
+	if r.StatusCode != http.StatusOK {
+		return fmt.Errorf("expected response to be HTTP 200, received %s", r.Status)
 	}
-	o.Longitude = location.Lng
-	o.Latitude = location.Lat
+
+	codes := geocodes{}
+	if err := json.NewDecoder(r.Body).Decode(&codes); err != nil {
+		return err
+	}
+
+	for _, code := range codes {
+		o.Longitude, o.Latitude = code.floats()
+	}
 	return nil
 }
 

@@ -26,5 +26,3 @@ import:
   version: ~0.8.0
 - package: github.com/Sirupsen/logrus
   version: ~0.11.5
-- package: github.com/codingsince1985/geo-golang
-  version: ~4.0.0

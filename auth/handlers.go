@@ -35,7 +35,7 @@ func (c *Config) LoginHandler(r *http.Request) *service.Response {
 		return service.NewResponse(err, http.StatusUnauthorized, nil)
 	}
 
-	str, err := token(c.TokenSecret, account, c.MapboxAPIKey, c.Clock)
+	str, err := token(c.TokenSecret, account, c.Clock)
 	if err != nil {
 		return service.NewResponse(err, http.StatusUnauthorized, nil)
 	}
@@ -58,7 +58,7 @@ func (c *Config) RegisterHandler(r *http.Request) *service.Response {
 		return service.NewResponse(errors.Wrap(err, errRegistrationFailed.Error()), http.StatusBadRequest, nil)
 	}
 
-	str, err := token(c.TokenSecret, a, c.MapboxAPIKey, c.Clock)
+	str, err := token(c.TokenSecret, a, c.Clock)
 	if err != nil {
 		return service.NewResponse(err, http.StatusBadRequest, nil)
 	}

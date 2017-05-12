@@ -30,7 +30,7 @@ func TestLoginHandler(t *testing.T) {
 	dbAccount := models.Account{Email: "jte@jte.com", Password: "jte", ID: 1}
 	dbAccount.SetPassword(strings.Split(dbAccount.Email, "@")[0])
 
-	expectedResponseToken, _ := token("secret", models.Account{Email: dbAccount.Email, ID: dbAccount.ID}, "", mockClock{})
+	expectedResponseToken, _ := token("secret", models.Account{Email: dbAccount.Email, ID: dbAccount.ID}, mockClock{})
 
 	tests := []struct {
 		bytes    []byte
@@ -59,7 +59,7 @@ func TestLoginHandler(t *testing.T) {
 	for _, test := range tests {
 		db, mock, _ := sqlmock.New()
 		defer db.Close()
-		config := Init(sqlx.NewDb(db, "sqlmock"), "secret", "")
+		config := Init(sqlx.NewDb(db, "sqlmock"), "secret")
 		config.Clock = mockClock{}
 
 		creds := Credentials{}
@@ -91,8 +91,8 @@ func TestRequiredMiddleware(t *testing.T) {
 
 	expectedResponseAccount := models.Account{Email: dbAccount.Email, ID: dbAccount.ID}
 
-	authenticatedJWT, _ := token("secret", expectedResponseAccount, "", clock{})
-	unauthenticatedJWT, _ := token("bad-secret", expectedResponseAccount, "", clock{})
+	authenticatedJWT, _ := token("secret", expectedResponseAccount, clock{})
+	unauthenticatedJWT, _ := token("bad-secret", expectedResponseAccount, clock{})
 
 	tests := []struct {
 		header   http.Header
@@ -131,7 +131,7 @@ func TestRequiredMiddleware(t *testing.T) {
 	for _, test := range tests {
 		db, mock, _ := sqlmock.New()
 		defer db.Close()
-		config := Init(sqlx.NewDb(db, "sqlmock"), "secret", "")
+		config := Init(sqlx.NewDb(db, "sqlmock"), "secret")
 
 		var expected *sqlmock.ExpectedQuery
 		if email, _, ok := parseBasicAuth(test.header.Get("Authorization")); ok {

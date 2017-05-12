@@ -21,13 +21,11 @@ func (clock) Now() time.Time {
 type Claims struct {
 	jwt.StandardClaims
 	models.Account
-	MapboxAPIKey string `json:"mapboxAPIKey"`
 }
 
-func token(key string, account models.Account, mapboxAPIKey string, c timer) (string, error) {
+func token(key string, account models.Account, c timer) (string, error) {
 	return jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
 		jwt.StandardClaims{ExpiresAt: c.Now().Add(time.Hour * 24).Unix()},
 		account,
-		mapboxAPIKey,
 	}).SignedString([]byte(key))
 }

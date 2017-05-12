@@ -5,6 +5,5 @@ import (
 )
 
 var (
-	errGeo             = errors.New("geo")
 	errAddressRequired = errors.New("address requird")
 )

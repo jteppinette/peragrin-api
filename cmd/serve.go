@@ -25,8 +25,8 @@ func serve() {
 		log.Fatal(err)
 	}
 
-	auth := auth.Init(client, viper.GetString("TOKEN_SECRET"), viper.GetString("MAPBOX_API_KEY"))
-	organizations := organizations.Init(client)
+	auth := auth.Init(client, viper.GetString("TOKEN_SECRET"))
+	organizations := organizations.Init(client, viper.GetString("LOCATIONIQ_API_KEY"))
 	posts := posts.Init(client)
 	communities := communities.Init(client)
 
@@ -39,7 +39,9 @@ func serve() {
 	r.Handle("/communities/{communityID:[0-9]+}/organizations", auth.RequiredMiddleware(communities.ListOrganizationsHandler))
 	r.Handle("/communities/{communityID:[0-9]+}/posts", auth.RequiredMiddleware(communities.ListPostsHandler))
 
-	r.Handle("/organizations", auth.RequiredMiddleware(organizations.ListHandler))
+	r.Handle("/organizations", auth.RequiredMiddleware(organizations.ListHandler)).Methods(http.MethodGet)
+	r.Handle("/organizations", auth.RequiredMiddleware(organizations.CreateHandler)).Methods(http.MethodPost)
+
 	r.Handle("/organizations/{organizationID:[0-9]+}", auth.RequiredMiddleware(organizations.GetHandler))
 	r.Handle("/organizations/{organizationID:[0-9]+}/posts", auth.RequiredMiddleware(posts.CreateHandler))
 
@@ -63,4 +65,7 @@ func init() {
 
 	Serve.PersistentFlags().StringP("token-secret", "", "token-secret", "the secret used to sign the json web tokens")
 	viper.BindPFlag("TOKEN_SECRET", Serve.PersistentFlags().Lookup("token-secret"))
+
+	Serve.PersistentFlags().StringP("locationiq-api-key", "", "", "api key to access location iq api")
+	viper.BindPFlag("LOCATIONIQ_API_KEY", Serve.PersistentFlags().Lookup("locationiq-api-key"))
 }

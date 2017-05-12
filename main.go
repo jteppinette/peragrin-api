@@ -60,9 +60,6 @@ func main() {
 	root.PersistentFlags().StringP("log-level", "l", "info", "log level [debug, info, warning, error, fatal, panic]")
 	viper.BindPFlag("LOG_LEVEL", root.PersistentFlags().Lookup("log-level"))
 
-	root.PersistentFlags().StringP("mapbox-api-key", "", "", "api key to access mapbox api")
-	viper.BindPFlag("MAPBOX_API_KEY", root.PersistentFlags().Lookup("mapbox-api-key"))
-
 	root.AddCommand(cmd.Migrate)
 	root.AddCommand(cmd.CreateFixtureData)
 	root.AddCommand(cmd.Serve)

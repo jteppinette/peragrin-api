@@ -6,6 +6,7 @@ import (
 
 var (
 	errCreateOrganization = errors.New("create organization")
+	errUpdateOrganization = errors.New("update organization")
 	errListOrganizations  = errors.New("list organizations")
 	errGetOrganization    = errors.New("get organization")
 

@@ -42,7 +42,8 @@ func serve() {
 	r.Handle("/organizations", auth.RequiredMiddleware(organizations.ListHandler)).Methods(http.MethodGet)
 	r.Handle("/organizations", auth.RequiredMiddleware(organizations.CreateHandler)).Methods(http.MethodPost)
 
-	r.Handle("/organizations/{organizationID:[0-9]+}", auth.RequiredMiddleware(organizations.GetHandler))
+	r.Handle("/organizations/{organizationID:[0-9]+}", auth.RequiredMiddleware(organizations.GetHandler)).Methods(http.MethodGet)
+	r.Handle("/organizations/{organizationID:[0-9]+}", auth.RequiredMiddleware(organizations.UpdateHandler)).Methods(http.MethodPost)
 	r.Handle("/organizations/{organizationID:[0-9]+}/posts", auth.RequiredMiddleware(posts.CreateHandler))
 
 	log.Infof("initializing server: %s", viper.GetString("PORT"))

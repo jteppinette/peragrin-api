@@ -21,6 +21,22 @@ func (c *Config) AccountHandler(r *http.Request) *service.Response {
 	return service.NewResponse(errAuthenticationRequired, http.StatusUnauthorized, nil)
 }
 
+// OrganizationsHandler generates a response object containing the organizations that are
+// operated by the currently authenticated account.
+func (c *Config) OrganizationsHandler(r *http.Request) *service.Response {
+	account, ok := context.Get(r, "account").(models.Account)
+	if !ok {
+		return service.NewResponse(errAuthenticationRequired, http.StatusUnauthorized, nil)
+	}
+
+	organizations, err := models.ListOrganizationsByAccountID(account.ID, c.Client)
+	if err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+
+	return service.NewResponse(nil, http.StatusOK, organizations)
+}
+
 // LoginHandler reads a JSON encoded email and password from the provided request
 // and attempts to authenticate these credentials.
 // If succesful, a token object will be returned to the client.

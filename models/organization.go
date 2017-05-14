@@ -103,12 +103,19 @@ func ListOrganizations(client *sqlx.DB) (Organizations, error) {
 	return organizations, nil
 }
 
-// ListOrganizationsByCommunityID returns all organizations in a given community.
-// TODO: This SQL statement needs to be converted into a join across the M2M
-// intermediary relation.
+// ListOrganizationsByCommunityID returns all organizations that are a member of the given community.
 func ListOrganizationsByCommunityID(id int, client *sqlx.DB) (Organizations, error) {
 	organizations := Organizations{}
 	if err := client.Select(&organizations, "SELECT Organization.* FROM Organization INNER JOIN Membership ON (Organization.ID = Membership.OrganizationID) WHERE communityid = $1;", id); err != nil {
+		return nil, err
+	}
+	return organizations, nil
+}
+
+// ListOrganizationsByAccountID returns all organizations that are operated by the given account.
+func ListOrganizationsByAccountID(id int, client *sqlx.DB) (Organizations, error) {
+	organizations := Organizations{}
+	if err := client.Select(&organizations, "SELECT Organization.* FROM Organization INNER JOIN Operator ON (Organization.ID = Operator.OrganizationID) WHERE accountID = $1;", id); err != nil {
 		return nil, err
 	}
 	return organizations, nil

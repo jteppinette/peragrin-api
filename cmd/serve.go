@@ -31,17 +31,16 @@ func serve() {
 	communities := communities.Init(client)
 
 	r := mux.NewRouter()
-	r.Handle("/login", service.Handler(auth.LoginHandler))
-	r.Handle("/register", service.Handler(auth.RegisterHandler))
-	r.Handle("/account", auth.RequiredMiddleware(auth.AccountHandler))
-	r.Handle("/communities", service.Handler(communities.ListHandler))
+	r.Handle("/auth/login", service.Handler(auth.LoginHandler))
+	r.Handle("/auth/register", service.Handler(auth.RegisterHandler))
+	r.Handle("/auth/account", auth.RequiredMiddleware(auth.AccountHandler))
 
+	r.Handle("/communities", service.Handler(communities.ListHandler))
 	r.Handle("/communities/{communityID:[0-9]+}/organizations", auth.RequiredMiddleware(communities.ListOrganizationsHandler))
 	r.Handle("/communities/{communityID:[0-9]+}/posts", auth.RequiredMiddleware(communities.ListPostsHandler))
 
 	r.Handle("/organizations", auth.RequiredMiddleware(organizations.ListHandler)).Methods(http.MethodGet)
 	r.Handle("/organizations", auth.RequiredMiddleware(organizations.CreateHandler)).Methods(http.MethodPost)
-
 	r.Handle("/organizations/{organizationID:[0-9]+}", auth.RequiredMiddleware(organizations.GetHandler)).Methods(http.MethodGet)
 	r.Handle("/organizations/{organizationID:[0-9]+}", auth.RequiredMiddleware(organizations.UpdateHandler)).Methods(http.MethodPost)
 	r.Handle("/organizations/{organizationID:[0-9]+}/posts", auth.RequiredMiddleware(posts.CreateHandler))

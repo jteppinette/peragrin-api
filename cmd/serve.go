@@ -13,7 +13,6 @@ import (
 	"gitlab.com/peragrin/api/communities"
 	"gitlab.com/peragrin/api/db"
 	"gitlab.com/peragrin/api/organizations"
-	"gitlab.com/peragrin/api/posts"
 	"gitlab.com/peragrin/api/service"
 )
 
@@ -27,7 +26,6 @@ func serve() {
 
 	auth := auth.Init(client, viper.GetString("TOKEN_SECRET"))
 	organizations := organizations.Init(client, viper.GetString("LOCATIONIQ_API_KEY"))
-	posts := posts.Init(client)
 	communities := communities.Init(client)
 
 	r := mux.NewRouter()
@@ -43,7 +41,7 @@ func serve() {
 	r.Handle("/organizations", auth.RequiredMiddleware(organizations.CreateHandler)).Methods(http.MethodPost)
 	r.Handle("/organizations/{organizationID:[0-9]+}", auth.RequiredMiddleware(organizations.GetHandler)).Methods(http.MethodGet)
 	r.Handle("/organizations/{organizationID:[0-9]+}", auth.RequiredMiddleware(organizations.UpdateHandler)).Methods(http.MethodPost)
-	r.Handle("/organizations/{organizationID:[0-9]+}/posts", auth.RequiredMiddleware(posts.CreateHandler))
+	r.Handle("/organizations/{organizationID:[0-9]+}/posts", auth.RequiredMiddleware(organizations.CreatePostHandler))
 
 	log.Infof("initializing server: %s", viper.GetString("PORT"))
 	http.ListenAndServe(fmt.Sprintf(":%s", viper.GetString("PORT")), r)

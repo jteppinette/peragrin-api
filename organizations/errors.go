@@ -10,6 +10,8 @@ var (
 	errListOrganizations  = errors.New("list organizations")
 	errGetOrganization    = errors.New("get organization")
 
+	errCreatePost = errors.New("create post")
+
 	errOrganizationIDRequired = errors.New("organization id required")
 	errGeocode                = errors.New("geocode")
 

@@ -111,3 +111,18 @@ func (c *Config) CreatePostHandler(r *http.Request) *service.Response {
 
 	return service.NewResponse(nil, http.StatusCreated, form)
 }
+
+// ListCommunitiesHandler returns a response with all communities that are
+// membered by the provided organization.
+func (c *Config) ListCommunitiesHandler(r *http.Request) *service.Response {
+	id, err := strconv.Atoi(mux.Vars(r)["organizationID"])
+	if err != nil {
+		return service.NewResponse(errors.Wrap(err, errOrganizationIDRequired.Error()), http.StatusBadRequest, nil)
+	}
+
+	v, err := models.ListCommunitiesByOrganizationID(id, c.Client)
+	if err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+	return service.NewResponse(nil, http.StatusOK, v)
+}

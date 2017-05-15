@@ -42,6 +42,7 @@ func serve() {
 	r.Handle("/organizations", auth.RequiredMiddleware(organizations.CreateHandler)).Methods(http.MethodPost)
 	r.Handle("/organizations/{organizationID:[0-9]+}", auth.RequiredMiddleware(organizations.GetHandler)).Methods(http.MethodGet)
 	r.Handle("/organizations/{organizationID:[0-9]+}", auth.RequiredMiddleware(organizations.UpdateHandler)).Methods(http.MethodPost)
+	r.Handle("/organizations/{organizationID:[0-9]+}/communities", auth.RequiredMiddleware(organizations.ListCommunitiesHandler))
 	r.Handle("/organizations/{organizationID:[0-9]+}/posts", auth.RequiredMiddleware(organizations.CreatePostHandler))
 
 	log.Infof("initializing server: %s", viper.GetString("PORT"))

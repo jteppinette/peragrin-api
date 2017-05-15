@@ -38,3 +38,13 @@ func ListCommunities(client *sqlx.DB) (Communities, error) {
 	}
 	return communities, nil
 }
+
+// ListCommunitiesByOrganizationID returns all communities that are membered
+// by the provided organization.
+func ListCommunitiesByOrganizationID(organizationID int, client *sqlx.DB) (Communities, error) {
+	communities := Communities{}
+	if err := client.Select(&communities, "SELECT Community.* FROM Community INNER JOIN Membership ON (Community.ID = Membership.CommunityID) WHERE organizationID = $1", organizationID); err != nil {
+		return nil, err
+	}
+	return communities, nil
+}

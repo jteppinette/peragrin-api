@@ -13,6 +13,7 @@ var (
 	errCreatePost = errors.New("create post")
 
 	errOrganizationIDRequired = errors.New("organization id required")
+	errCommunityIDRequired    = errors.New("community id required")
 	errGeocode                = errors.New("geocode")
 
 	errAddOperator = errors.New("add operator")

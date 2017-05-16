@@ -2,6 +2,7 @@ package organizations
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -125,4 +126,24 @@ func (c *Config) ListCommunitiesHandler(r *http.Request) *service.Response {
 		return service.NewResponse(err, http.StatusBadRequest, nil)
 	}
 	return service.NewResponse(nil, http.StatusOK, v)
+}
+
+// BulkJoinCommunityHandler creates a membership relationship between the given
+// organization and communities.
+func (c *Config) BulkJoinCommunityHandler(r *http.Request) *service.Response {
+	id, err := strconv.Atoi(mux.Vars(r)["organizationID"])
+	if err != nil {
+		return service.NewResponse(errors.Wrap(err, errOrganizationIDRequired.Error()), http.StatusBadRequest, nil)
+	}
+
+	communities := models.Communities{}
+	if err := json.NewDecoder(r.Body).Decode(&communities); err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+	for _, community := range communities {
+		if community.AddMembership(id, false, c.Client); err != nil {
+			return service.NewResponse(errors.Wrap(err, fmt.Sprintf("adding membership (o: %d, c: %d)", id, community.ID)), http.StatusBadRequest, nil)
+		}
+	}
+	return service.NewResponse(nil, http.StatusOK, nil)
 }

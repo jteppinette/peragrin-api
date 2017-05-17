@@ -6,6 +6,8 @@ import (
 
 var (
 	errCreateOrganization = errors.New("create organization")
+	errCreateCommunity    = errors.New("create community")
+	errAddMembership      = errors.New("add membership")
 	errUpdateOrganization = errors.New("update organization")
 	errListOrganizations  = errors.New("list organizations")
 	errGetOrganization    = errors.New("get organization")

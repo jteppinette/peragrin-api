@@ -146,3 +146,28 @@ func (c *Config) AddMembershipHandler(r *http.Request) *service.Response {
 	}
 	return service.NewResponse(nil, http.StatusOK, nil)
 }
+
+// CreateCommunityHandler creates a new community and creates an
+// administrative membership relationship between the requeting
+// organization and community.
+func (c *Config) CreateCommunityHandler(r *http.Request) *service.Response {
+	id, err := strconv.Atoi(mux.Vars(r)["organizationID"])
+	if err != nil {
+		return service.NewResponse(errors.Wrap(err, errOrganizationIDRequired.Error()), http.StatusBadRequest, nil)
+	}
+
+	community := models.Community{}
+	if err := json.NewDecoder(r.Body).Decode(&community); err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+
+	if err := community.Save(c.Client); err != nil {
+		return service.NewResponse(errors.Wrap(err, errCreateCommunity.Error()), http.StatusBadRequest, nil)
+	}
+
+	if err := community.AddMembership(id, true, c.Client); err != nil {
+		return service.NewResponse(errors.Wrap(err, errAddMembership.Error()), http.StatusBadRequest, nil)
+	}
+
+	return service.NewResponse(nil, http.StatusOK, community)
+}

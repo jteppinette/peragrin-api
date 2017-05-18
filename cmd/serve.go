@@ -36,7 +36,7 @@ func serve() {
 	r.Handle("/auth/organizations", auth.RequiredMiddleware(auth.CreateOrganizationHandler)).Methods(http.MethodPost)
 
 	r.Handle("/communities", service.Handler(communities.ListHandler))
-	r.Handle("/communities/{communityID:[0-9]+}/organizations", auth.RequiredMiddleware(communities.ListOrganizationsHandler))
+	r.Handle("/communities/{communityID:[0-9]+}/organizations", service.Handler(communities.ListOrganizationsHandler))
 	r.Handle("/communities/{communityID:[0-9]+}/posts", auth.RequiredMiddleware(communities.ListPostsHandler))
 
 	r.Handle("/organizations/{organizationID:[0-9]+}", auth.RequiredMiddleware(organizations.UpdateHandler)).Methods(http.MethodPost)

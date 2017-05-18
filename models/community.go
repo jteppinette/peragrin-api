@@ -12,26 +12,28 @@ type Communities []Community
 type Community struct {
 	ID   int    `json:"id"`
 	Name string `json:"name"`
+
+	// IsAdministrator is only populated when this community
+	// is in the context of an organization.
+	IsAdministrator *bool `json:"isAdministrator,omitempty"`
 }
 
-// Save creates or updates a community based on the existence of an id.
-func (c *Community) Save(client *sqlx.DB) error {
-	if c.ID != 0 {
-		return client.Get(c, "UPDATE Community SET name = $2 WHERE id = $1 RETURNING *;", c.ID, c.Name)
+// Create persists the provided community in the database, and it creates
+// the relationship to the provided organization. This will be an administrative
+// relationship.
+func (c *Community) Create(organizationID int, client *sqlx.DB) error {
+	if err := client.Get(c, "INSERT INTO Community (name) VALUES ($1) RETURNING *;", c.Name); err != nil {
+		return err
 	}
-	return client.Get(c, "INSERT INTO Community (name) VALUES ($1) RETURNING *;", c.Name)
+	co := CommunityOrganization{OrganizationID: organizationID, CommunityID: c.ID, IsAdministrator: true}
+	if err := co.Create(client); err != nil {
+		return err
+	}
+	return nil
 }
 
-// AddMembership creates an objects that describes the relationship between
-// the provided organization and this community. If `isAdministrator` is true, then
-// the provided organization will be an administrator over this community.
-func (c *Community) AddMembership(organizationID int, isAdministrator bool, client *sqlx.DB) error {
-	membership := Membership{OrganizationID: organizationID, CommunityID: c.ID, IsAdministrator: isAdministrator}
-	return membership.Save(client)
-}
-
-// ListCommunities returns all communities in the database.
-func ListCommunities(client *sqlx.DB) (Communities, error) {
+// GetCommunities returns all communities in the database.
+func GetCommunities(client *sqlx.DB) (Communities, error) {
 	communities := Communities{}
 	if err := client.Select(&communities, "SELECT * FROM Community;"); err != nil {
 		return nil, err
@@ -39,11 +41,11 @@ func ListCommunities(client *sqlx.DB) (Communities, error) {
 	return communities, nil
 }
 
-// ListCommunitiesByOrganizationID returns all communities that are membered
-// by the provided organization.
-func ListCommunitiesByOrganizationID(organizationID int, client *sqlx.DB) (Communities, error) {
+// GetCommunitiesByOrganization returns all communities with a relationship
+// to the provided organization.
+func GetCommunitiesByOrganization(organizationID int, client *sqlx.DB) (Communities, error) {
 	communities := Communities{}
-	if err := client.Select(&communities, "SELECT Community.* FROM Community INNER JOIN Membership ON (Community.ID = Membership.CommunityID) WHERE organizationID = $1", organizationID); err != nil {
+	if err := client.Select(&communities, "SELECT Community.*, CommunityOrganization.isAdministrator FROM Community INNER JOIN CommunityOrganization ON (Community.id = CommunityOrganization.communityID) WHERE organizationID = $1", organizationID); err != nil {
 		return nil, err
 	}
 	return communities, nil

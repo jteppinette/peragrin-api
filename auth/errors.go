@@ -13,6 +13,9 @@ var (
 	errRegistrationFailed                 = errors.New("registration failed")
 	errGeocodeFailed                      = errors.New("geocode failed")
 
+	errCreateOrganization = errors.New("create organization")
+	errGeocode            = errors.New("geocode")
+
 	errBasicAuth = errors.New("basic auth")
 	errJWTAuth   = errors.New("jwt auth")
 )

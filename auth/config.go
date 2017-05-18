@@ -10,11 +10,12 @@ var (
 )
 
 type Config struct {
-	Client      *sqlx.DB
-	TokenSecret string
-	Clock       timer
+	Client           *sqlx.DB
+	TokenSecret      string
+	Clock            timer
+	LocationIQAPIKey string
 }
 
-func Init(client *sqlx.DB, tokenSecret string) *Config {
-	return &Config{client, tokenSecret, clock{}}
+func Init(client *sqlx.DB, tokenSecret string, locationIQAPIKey string) *Config {
+	return &Config{client, tokenSecret, clock{}, locationIQAPIKey}
 }

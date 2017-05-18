@@ -3,7 +3,6 @@ package fixture
 import (
 	"strings"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/jmoiron/sqlx"
 	"gitlab.com/peragrin/api/models"
 )
@@ -69,7 +68,7 @@ var (
 	}{
 		{midtown, midtownAtlantaChamber, true},
 		{midtown, bobbyDoddStadium, false},
-		{decatur, emoryPublix, false},
+		{decatur, emoryPublix, true},
 	}
 
 	posts = []struct {
@@ -86,24 +85,17 @@ var (
 // uploaded data will be deleted.
 func Initialize(client *sqlx.DB) error {
 
-	// Clear out the database.
 	if _, err := client.Exec(`
 			DELETE FROM Community;
 			DELETE FROM Organization;
 			DELETE FROM Account;
 			DELETE FROM Post;
-			DELETE FROM Membership;
-			DELETE FROM Operator;
+			DELETE FROM CommunityOrganization;
+			DELETE FROM AccountOrganization;
 	`); err != nil {
 		return err
 	}
 
-	for i := range communities {
-		if err := communities[i].Save(client); err != nil {
-			return err
-		}
-		log.Infof("Created Community: %+v", communities[i])
-	}
 	for i := range accounts {
 		account := accounts[i]
 		if err := account.SetPassword(strings.Split(account.Email, "@")[0]); err != nil {
@@ -112,24 +104,24 @@ func Initialize(client *sqlx.DB) error {
 		if err := account.Save(client); err != nil {
 			return err
 		}
-		log.Infof("Created Account: %+v", account)
-	}
-	for i := range organizations {
-		if err := organizations[i].Save(client); err != nil {
-			return err
-		}
-		log.Infof("Created Organization: %+v", organizations[i])
-	}
-
-	for _, membership := range memberships {
-		if err := membership.organization.AddMembership(membership.community.ID, membership.isAdministrator, client); err != nil {
-			return err
-		}
 	}
 
 	for _, operator := range operators {
-		if err := operator.account.AddOperator(operator.organization.ID, client); err != nil {
+		if err := operator.organization.Create(operator.account.ID, client); err != nil {
 			return err
+		}
+	}
+
+	for _, membership := range memberships {
+		if membership.isAdministrator {
+			if err := membership.community.Create(membership.organization.ID, client); err != nil {
+				return err
+			}
+		} else {
+			co := models.CommunityOrganization{CommunityID: membership.community.ID, OrganizationID: membership.organization.ID}
+			if err := co.Create(client); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -139,7 +131,6 @@ func Initialize(client *sqlx.DB) error {
 			if err := item.Save(client); err != nil {
 				return err
 			}
-			log.Infof("Created Post: %+v", item)
 		}
 	}
 

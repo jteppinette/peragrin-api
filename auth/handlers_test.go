@@ -59,7 +59,7 @@ func TestLoginHandler(t *testing.T) {
 	for _, test := range tests {
 		db, mock, _ := sqlmock.New()
 		defer db.Close()
-		config := Init(sqlx.NewDb(db, "sqlmock"), "secret")
+		config := Init(sqlx.NewDb(db, "sqlmock"), "secret", "")
 		config.Clock = mockClock{}
 
 		creds := Credentials{}
@@ -131,7 +131,7 @@ func TestRequiredMiddleware(t *testing.T) {
 	for _, test := range tests {
 		db, mock, _ := sqlmock.New()
 		defer db.Close()
-		config := Init(sqlx.NewDb(db, "sqlmock"), "secret")
+		config := Init(sqlx.NewDb(db, "sqlmock"), "secret", "")
 
 		var expected *sqlmock.ExpectedQuery
 		if email, _, ok := parseBasicAuth(test.header.Get("Authorization")); ok {
@@ -139,7 +139,7 @@ func TestRequiredMiddleware(t *testing.T) {
 			expected.WillReturnRows(sqlmock.NewRows([]string{"id", "email", "password"}).AddRow(dbAccount.ID, dbAccount.Email, dbAccount.Password))
 		}
 
-		response := config.RequiredMiddleware(config.AccountHandler)(&http.Request{Header: test.header})
+		response := config.RequiredMiddleware(config.GetAccountHandler)(&http.Request{Header: test.header})
 
 		if err := mock.ExpectationsWereMet(); expected != nil && err != nil {
 			t.Errorf("unmet expectation error: %s", err)

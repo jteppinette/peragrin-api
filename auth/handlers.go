@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/context"
 	"github.com/pkg/errors"
@@ -12,29 +13,59 @@ import (
 	"gitlab.com/peragrin/api/service"
 )
 
-// AccountHandler returns the currently authenticated account. To function properly,
+// GetAccountHandler returns the currently authenticated account. To function properly,
 // a preceding middleware must add the "account" key to the request context.
-func (c *Config) AccountHandler(r *http.Request) *service.Response {
+func (c *Config) GetAccountHandler(r *http.Request) *service.Response {
 	if account, ok := context.GetOk(r, "account"); ok {
 		return service.NewResponse(nil, http.StatusOK, account)
 	}
 	return service.NewResponse(errAuthenticationRequired, http.StatusUnauthorized, nil)
 }
 
-// OrganizationsHandler generates a response object containing the organizations that are
+// ListOrganizationsHandler generates a response object containing the organizations that are
 // operated by the currently authenticated account.
-func (c *Config) OrganizationsHandler(r *http.Request) *service.Response {
+func (c *Config) ListOrganizationsHandler(r *http.Request) *service.Response {
 	account, ok := context.Get(r, "account").(models.Account)
 	if !ok {
 		return service.NewResponse(errAuthenticationRequired, http.StatusUnauthorized, nil)
 	}
 
-	organizations, err := models.ListOrganizationsByAccountID(account.ID, c.Client)
+	organizations, err := models.GetOrganizationsByAccount(account.ID, c.Client)
 	if err != nil {
 		return service.NewResponse(err, http.StatusBadRequest, nil)
 	}
 
 	return service.NewResponse(nil, http.StatusOK, organizations)
+}
+
+// CreateOrganizationHandler saves a new organization to the database.
+func (c *Config) CreateOrganizationHandler(r *http.Request) *service.Response {
+	account, ok := context.Get(r, "account").(models.Account)
+	if !ok {
+		return service.NewResponse(errAuthenticationRequired, http.StatusUnauthorized, nil)
+	}
+
+	organization := models.Organization{}
+	if err := json.NewDecoder(r.Body).Decode(&organization); err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+
+	// If there is a geocode lookup failure, then log the failure. We
+	// will just let the user manually enter the coordinates.
+	if err := organization.SetGeo(c.LocationIQAPIKey); err != nil {
+		logrus.WithFields(logrus.Fields{
+			"street":  organization.Street,
+			"city":    organization.City,
+			"state":   organization.State,
+			"country": organization.Country,
+			"zip":     organization.Zip,
+		}).Error(errors.Wrap(err, errGeocode.Error()))
+	}
+
+	if err := organization.Create(account.ID, c.Client); err != nil {
+		return service.NewResponse(errors.Wrap(err, errCreateOrganization.Error()), http.StatusBadRequest, nil)
+	}
+	return service.NewResponse(nil, http.StatusCreated, organization)
 }
 
 // LoginHandler reads a JSON encoded email and password from the provided request

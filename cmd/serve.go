@@ -24,27 +24,25 @@ func serve() {
 		log.Fatal(err)
 	}
 
-	auth := auth.Init(client, viper.GetString("TOKEN_SECRET"))
-	organizations := organizations.Init(client, viper.GetString("LOCATIONIQ_API_KEY"))
+	auth := auth.Init(client, viper.GetString("TOKEN_SECRET"), viper.GetString("LOCATIONIQ_API_KEY"))
+	organizations := organizations.Init(client)
 	communities := communities.Init(client)
 
 	r := mux.NewRouter()
 	r.Handle("/auth/login", service.Handler(auth.LoginHandler))
 	r.Handle("/auth/register", service.Handler(auth.RegisterHandler))
-	r.Handle("/auth/account", auth.RequiredMiddleware(auth.AccountHandler))
-	r.Handle("/auth/organizations", auth.RequiredMiddleware(auth.OrganizationsHandler))
+	r.Handle("/auth/account", auth.RequiredMiddleware(auth.GetAccountHandler))
+	r.Handle("/auth/organizations", auth.RequiredMiddleware(auth.ListOrganizationsHandler)).Methods(http.MethodGet)
+	r.Handle("/auth/organizations", auth.RequiredMiddleware(auth.CreateOrganizationHandler)).Methods(http.MethodPost)
 
 	r.Handle("/communities", service.Handler(communities.ListHandler))
 	r.Handle("/communities/{communityID:[0-9]+}/organizations", auth.RequiredMiddleware(communities.ListOrganizationsHandler))
 	r.Handle("/communities/{communityID:[0-9]+}/posts", auth.RequiredMiddleware(communities.ListPostsHandler))
 
-	r.Handle("/organizations", service.Handler(organizations.ListHandler)).Methods(http.MethodGet)
-	r.Handle("/organizations", auth.RequiredMiddleware(organizations.CreateHandler)).Methods(http.MethodPost)
-	r.Handle("/organizations/{organizationID:[0-9]+}", auth.RequiredMiddleware(organizations.GetHandler)).Methods(http.MethodGet)
 	r.Handle("/organizations/{organizationID:[0-9]+}", auth.RequiredMiddleware(organizations.UpdateHandler)).Methods(http.MethodPost)
 	r.Handle("/organizations/{organizationID:[0-9]+}/communities", auth.RequiredMiddleware(organizations.ListCommunitiesHandler)).Methods(http.MethodGet)
 	r.Handle("/organizations/{organizationID:[0-9]+}/communities", auth.RequiredMiddleware(organizations.CreateCommunityHandler)).Methods(http.MethodPost)
-	r.Handle("/organizations/{organizationID:[0-9]+}/communities/{communityID:[0-9]+}", auth.RequiredMiddleware(organizations.AddMembershipHandler)).Methods(http.MethodPost)
+	r.Handle("/organizations/{organizationID:[0-9]+}/communities/{communityID:[0-9]+}", auth.RequiredMiddleware(organizations.JoinCommunityHandler)).Methods(http.MethodPost)
 	r.Handle("/organizations/{organizationID:[0-9]+}/posts", auth.RequiredMiddleware(organizations.CreatePostHandler))
 
 	log.Infof("initializing server: %s", viper.GetString("PORT"))

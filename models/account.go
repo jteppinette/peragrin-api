@@ -40,22 +40,6 @@ func (a *Account) Save(client *sqlx.DB) error {
 	return client.Get(a, "INSERT INTO Account (email, password) VALUES ($1, $2) RETURNING *;", a.Email, a.Password)
 }
 
-// AddOperator creates a relationship that defines this account as an
-// an operator of the provided organization.
-func (a *Account) AddOperator(organizationID int, client *sqlx.DB) error {
-	o := Operator{AccountID: a.ID, OrganizationID: organizationID}
-	return o.Save(client)
-}
-
-// ListAccounts returns all accounts in the database.
-func ListAccounts(client *sqlx.DB) (Accounts, error) {
-	accounts := Accounts{}
-	if err := client.Select(&accounts, "SELECT * FROM Account;"); err != nil {
-		return nil, err
-	}
-	return accounts, nil
-}
-
 // GetAccountByEmail returns the account in the database that matches the provided
 // email address. If there is not matching account, then an error is returned.
 func GetAccountByEmail(email string, client *sqlx.DB) (*Account, error) {

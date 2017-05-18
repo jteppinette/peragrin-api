@@ -13,39 +13,39 @@ import (
 
 // ListHandler returns a response with all communities.
 func (c *Config) ListHandler(r *http.Request) *service.Response {
-	v, err := models.ListCommunities(c.Client)
+	communities, err := models.GetCommunities(c.Client)
 	if err != nil {
-		return service.NewResponse(errors.Wrap(err, errListCommunities.Error()), http.StatusBadRequest, nil)
+		return service.NewResponse(err, http.StatusBadRequest, nil)
 	}
-	return service.NewResponse(nil, http.StatusOK, v)
+	return service.NewResponse(nil, http.StatusOK, communities)
 }
 
 // ListOrganizationsHandler returns a response with all organizations
 // in a given community.
 func (c *Config) ListOrganizationsHandler(r *http.Request) *service.Response {
-	id, err := strconv.Atoi(mux.Vars(r)["communityID"])
+	communityID, err := strconv.Atoi(mux.Vars(r)["communityID"])
 	if err != nil {
 		return service.NewResponse(errors.Wrap(err, errCommunityIDRequired.Error()), http.StatusBadRequest, nil)
 	}
 
-	v, err := models.ListOrganizationsByCommunityID(id, c.Client)
+	organizations, err := models.GetOrganizationsByCommunity(communityID, c.Client)
 	if err != nil {
-		return service.NewResponse(errors.Wrap(err, errListOrganizations.Error()), http.StatusBadRequest, nil)
+		return service.NewResponse(err, http.StatusBadRequest, nil)
 	}
-	return service.NewResponse(nil, http.StatusOK, v)
+	return service.NewResponse(nil, http.StatusOK, organizations)
 }
 
 // ListPostsHandler returns a response with all posts
 // in a given community.
 func (c *Config) ListPostsHandler(r *http.Request) *service.Response {
-	id, err := strconv.Atoi(mux.Vars(r)["communityID"])
+	communityID, err := strconv.Atoi(mux.Vars(r)["communityID"])
 	if err != nil {
 		return service.NewResponse(errors.Wrap(err, errCommunityIDRequired.Error()), http.StatusBadRequest, nil)
 	}
 
-	v, err := models.ListPostsByCommunityID(id, c.Client)
+	posts, err := models.GetPostsByCommunity(communityID, c.Client)
 	if err != nil {
-		return service.NewResponse(errors.Wrap(err, errListPosts.Error()), http.StatusBadRequest, nil)
+		return service.NewResponse(err, http.StatusBadRequest, nil)
 	}
-	return service.NewResponse(nil, http.StatusOK, v)
+	return service.NewResponse(nil, http.StatusOK, posts)
 }

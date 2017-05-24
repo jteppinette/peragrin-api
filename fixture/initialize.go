@@ -2,6 +2,7 @@ package fixture
 
 import (
 	"strings"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 	"gitlab.com/peragrin/api/models"
@@ -79,6 +80,14 @@ var (
 		{bobbyDoddStadium, []*models.Post{{Content: "Hey everyone! Come down to Bobby Dodd for the game today!"}, {Content: "Thats a win!"}}},
 		{emoryPublix, []*models.Post{{Content: "We have great specials today on subs! Come check it out!"}}},
 	}
+
+	hours = models.Hours{
+		{Weekday: time.Sunday, Start: 900, Close: 1700},
+		{Weekday: time.Monday, Start: 900, Close: 1700},
+		{Weekday: time.Tuesday, Start: 900, Close: 1700},
+		{Weekday: time.Wednesday, Start: 900, Close: 1700},
+		{Weekday: time.Thursday, Start: 900, Close: 1700},
+	}
 )
 
 // Initialize loads fixture data intot the current database. Any previously
@@ -108,6 +117,9 @@ func Initialize(client *sqlx.DB) error {
 
 	for _, operator := range operators {
 		if err := operator.organization.Create(operator.account.ID, client); err != nil {
+			return err
+		}
+		if err := hours.Set(operator.organization.ID, client); err != nil {
 			return err
 		}
 	}

@@ -12,6 +12,7 @@ func Migrate(client *sqlx.DB) error {
 			email			varchar(60) NOT NULL UNIQUE,
 			password		varchar(60) NOT NULL
 		);
+
 		CREATE TABLE IF NOT EXISTS Organization (
 			id		SERIAL PRIMARY KEY,
 			name	varchar(80) NOT NULL UNIQUE,
@@ -23,10 +24,20 @@ func Migrate(client *sqlx.DB) error {
 			lon		float,
 			lat		float
 		);
+
+		CREATE TABLE IF NOT EXISTS Hours (
+			organizationID integer REFERENCES Organization ON DELETE CASCADE,
+			weekday int,
+			start int,
+			close int,
+			PRIMARY KEY (organizationID, weekday, start, close)
+		);
+
 		CREATE TABLE IF NOT EXISTS Community (
 			id			SERIAL PRIMARY KEY,
 			name		varchar(80) NOT NULL UNIQUE
 		);
+
 		CREATE TABLE IF NOT EXISTS Post (
 			id				SERIAL PRIMARY KEY,
 			content			text,

@@ -44,6 +44,8 @@ func serve() {
 	r.Handle("/organizations/{organizationID:[0-9]+}/communities", auth.RequiredMiddleware(organizations.CreateCommunityHandler)).Methods(http.MethodPost)
 	r.Handle("/organizations/{organizationID:[0-9]+}/communities/{communityID:[0-9]+}", auth.RequiredMiddleware(organizations.JoinCommunityHandler)).Methods(http.MethodPost)
 	r.Handle("/organizations/{organizationID:[0-9]+}/posts", auth.RequiredMiddleware(organizations.CreatePostHandler))
+	r.Handle("/organizations/{organizationID:[0-9]+}/hours", auth.RequiredMiddleware(organizations.SetHoursHandler)).Methods(http.MethodPost)
+	r.Handle("/organizations/{organizationID:[0-9]+}/hours", service.Handler(organizations.ListHoursHandler)).Methods(http.MethodGet)
 
 	log.Infof("initializing server: %s", viper.GetString("PORT"))
 	http.ListenAndServe(fmt.Sprintf(":%s", viper.GetString("PORT")), r)

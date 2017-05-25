@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
+	"gitlab.com/peragrin/api/common"
 	"gitlab.com/peragrin/api/models"
 )
 
@@ -81,6 +83,23 @@ var (
 		{emoryPublix, []*models.Post{{Content: "We have great specials today on subs! Come check it out!"}}},
 	}
 
+	promotions = []struct {
+		organization *models.Organization
+		items        []*models.Promotion
+	}{
+		{
+			bobbyDoddStadium, []*models.Promotion{
+				{Name: "10% Off Food Purchases", Description: "All food purchases will be 10% off for members!"},
+				{Name: "5% Off Jerseys", Description: "Home team jerseys will be 10% off for members!", Exclusions: "Seasons Ticket Holder Required", Expiration: common.JSONNullTime{pq.NullTime{Time: time.Now().AddDate(0, 3, 0), Valid: true}}, IsSingleUse: true},
+			},
+		},
+		{
+			emoryPublix, []*models.Promotion{
+				{Name: "15% Off Publix Subs", Description: "All members, come enjoy 15% off our subs during this limited time offer!", Expiration: common.JSONNullTime{pq.NullTime{Time: time.Now().AddDate(0, 0, 7), Valid: true}}},
+			},
+		},
+	}
+
 	hours = models.Hours{
 		{Weekday: time.Sunday, Start: 900, Close: 1700},
 		{Weekday: time.Monday, Start: 900, Close: 1700},
@@ -140,6 +159,15 @@ func Initialize(client *sqlx.DB) error {
 	for _, post := range posts {
 		for _, item := range post.items {
 			item.OrganizationID = post.organization.ID
+			if err := item.Save(client); err != nil {
+				return err
+			}
+		}
+	}
+
+	for _, promotion := range promotions {
+		for _, item := range promotion.items {
+			item.OrganizationID = promotion.organization.ID
 			if err := item.Save(client); err != nil {
 				return err
 			}

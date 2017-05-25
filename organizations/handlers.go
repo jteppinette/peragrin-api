@@ -138,3 +138,19 @@ func (c *Config) ListHoursHandler(r *http.Request) *service.Response {
 
 	return service.NewResponse(nil, http.StatusOK, hours)
 }
+
+// ListPromotionsHandler generates a response with the promotions for
+// the requested organization.
+func (c *Config) ListPromotionsHandler(r *http.Request) *service.Response {
+	organizationID, err := strconv.Atoi(mux.Vars(r)["organizationID"])
+	if err != nil {
+		return service.NewResponse(errors.Wrap(err, errOrganizationIDRequired.Error()), http.StatusBadRequest, nil)
+	}
+
+	promotions, err := models.GetPromotionsByOrganization(organizationID, c.Client)
+	if err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+
+	return service.NewResponse(nil, http.StatusOK, promotions)
+}

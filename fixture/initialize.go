@@ -23,24 +23,33 @@ var (
 		Address: models.Address{
 			Street: "191 Peachtree St NE #3400", City: "Atlanta", State: "GA", Country: "United States", Zip: "30303",
 		},
-		Lon: -84.38642,
-		Lat: 33.759115,
+		Lon:     -84.38642,
+		Lat:     33.759115,
+		Email:   "contact@metroatlantachamber.com",
+		Phone:   "(678) 390-2910",
+		Website: "https://midtownatlanta.com",
 	}
 	bobbyDoddStadium = &models.Organization{
 		Name: "Bobby Dodd Stadium",
 		Address: models.Address{
 			Street: "North Avenue NW", City: "Atlanta", State: "GA", Country: "United States", Zip: "30313",
 		},
-		Lon: -84.3903448,
-		Lat: 33.7712937,
+		Lon:     -84.3903448,
+		Lat:     33.7712937,
+		Email:   "contact-us@bobby-dodd-stadium.com",
+		Phone:   "(770) 320-3202",
+		Website: "gt.edu",
 	}
 	emoryPublix = &models.Organization{
 		Name: "Publix Super Market at Emory Commons",
 		Address: models.Address{
 			Street: "2155 N Decatur Rd", City: "Decatur", State: "GA", Country: "United States", Zip: "30033",
 		},
-		Lon: -84.30444,
-		Lat: 33.79023,
+		Lon:     -84.30444,
+		Lat:     33.79023,
+		Email:   "contact@publix.com",
+		Phone:   "(770) 402-2309",
+		Website: "publix.com",
 	}
 
 	accounts = []*models.Account{

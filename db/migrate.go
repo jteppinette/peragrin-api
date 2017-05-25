@@ -22,7 +22,10 @@ func Migrate(client *sqlx.DB) error {
 			country	varchar(40) NOT NULL,
 			zip		varchar(20) NOT NULL,
 			lon		float,
-			lat		float
+			lat		float,
+			email varchar(60) NOT NULL,
+			phone varchar(20) NOT NULL,
+			website varchar(60) NOT NULL
 		);
 
 		CREATE TABLE IF NOT EXISTS Promotion (

@@ -14,8 +14,11 @@ type Organization struct {
 	ID   int    `json:"id"`
 	Name string `json:"name"`
 	Address
-	Lon float64 `json:"lon"`
-	Lat float64 `json:"lat"`
+	Lon     float64 `json:"lon"`
+	Lat     float64 `json:"lat"`
+	Email   string  `json:"email"`
+	Phone   string  `json:"phone"`
+	Website string  `json:"website"`
 
 	// IsAdministrator is only populated when this organization
 	// is in the context of a community.
@@ -38,10 +41,10 @@ func (o *Organization) SetGeo(key string) error {
 // account - organization relationship.
 func (o *Organization) Create(accountID int, client *sqlx.DB) error {
 	if err := client.Get(o, `
-		INSERT INTO Organization (name, street, city, state, country, zip, lon, lat)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		INSERT INTO Organization (name, street, city, state, country, zip, lon, lat, email, phone, website)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 		RETURNING *;
-	`, o.Name, o.Street, o.City, o.State, o.Country, o.Zip, o.Lon, o.Lat); err != nil {
+	`, o.Name, o.Street, o.City, o.State, o.Country, o.Zip, o.Lon, o.Lat, o.Email, o.Phone, o.Website); err != nil {
 		return err
 	}
 	ao := AccountOrganization{AccountID: accountID, OrganizationID: o.ID}
@@ -55,10 +58,10 @@ func (o *Organization) Create(accountID int, client *sqlx.DB) error {
 func (o *Organization) Update(client *sqlx.DB) error {
 	if err := client.Get(o, `
 		UPDATE Organization
-		SET name = $2, street = $3, city = $4, state = $5, country = $6, zip = $7, lon = $8, lat = $9
+		SET name = $2, street = $3, city = $4, state = $5, country = $6, zip = $7, lon = $8, lat = $9, email = $10, phone = $11, website = $12
 		WHERE id = $1
 		RETURNING *;
-	`, o.ID, o.Name, o.Street, o.City, o.State, o.Country, o.Zip, o.Lon, o.Lat); err != nil {
+	`, o.ID, o.Name, o.Street, o.City, o.State, o.Country, o.Zip, o.Lon, o.Lat, o.Email, o.Phone, o.Website); err != nil {
 		return err
 	}
 	return nil

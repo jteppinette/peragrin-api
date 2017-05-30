@@ -50,6 +50,25 @@ func (c *Config) CreatePostHandler(r *http.Request) *service.Response {
 	return service.NewResponse(nil, http.StatusCreated, post)
 }
 
+// CreatePromotionHandler saves a new promotion to the database.
+func (c *Config) CreatePromotionHandler(r *http.Request) *service.Response {
+	promotion := models.Promotion{}
+	if err := json.NewDecoder(r.Body).Decode(&promotion); err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+
+	organizationID, err := strconv.Atoi(mux.Vars(r)["organizationID"])
+	if err != nil {
+		return service.NewResponse(errors.Wrap(err, errOrganizationIDRequired.Error()), http.StatusBadRequest, nil)
+	}
+
+	promotion.OrganizationID = organizationID
+	if err := promotion.Save(c.Client); err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+	return service.NewResponse(nil, http.StatusCreated, promotion)
+}
+
 // ListCommunitiesHandler returns a response with all communities that are
 // membered by the provided organization.
 func (c *Config) ListCommunitiesHandler(r *http.Request) *service.Response {

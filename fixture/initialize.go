@@ -14,7 +14,6 @@ import (
 var (
 	kCone     = &models.Account{Email: "kathleen@billkaelin.com"}
 	gYeremian = &models.Account{Email: "gilbert@communitashospitality.com"}
-	jWilliams = &models.Account{Email: "julie@williams.com"}
 	sDoty     = &models.Account{Email: "shaun@bantamandbiddy.com"}
 	kPeak     = &models.Account{Email: "kevin@peak.com"}
 	gCameli   = &models.Account{Email: "george@cameli.com"}
@@ -30,7 +29,7 @@ var (
 	leah      = &models.Account{Email: "leah@kalemecrazy.net"}
 	jamie     = &models.Account{Email: "jamie.saye26@gmail.com"}
 
-	atlantaBeltLine = &models.Community{Name: "Atlanta BeltLine"}
+	atlantaBeltLine = &models.Community{Name: "Atlanta BeltLine", GeoJSON: "belt-line.geojson"}
 
 	atlantaBeltLinePartnership = &models.Organization{
 		Name: "Atlanta BeltLine Partnership",
@@ -42,6 +41,7 @@ var (
 		Email:   "info@atlbeltlinepartnership.org",
 		Phone:   "(404) 446-4404",
 		Website: "beltline.org",
+		Icon:    "atlanta-belt-line-partnership.png",
 		Logo:    "atlanta-belt-line-partnership.png",
 	}
 
@@ -56,19 +56,6 @@ var (
 		Phone:    "(404) 602-5510",
 		Website:  "http://www.10thp.com/",
 		Logo:     "tenth-and-piedmont.png",
-		Category: models.Resturaunt,
-	}
-	fourthAndSwift = &models.Organization{
-		Name: "4th and Swift Restaurant",
-		Address: models.Address{
-			Street: "621 North Avenue NE", City: "Atlanta", State: "GA", Country: "United States", Zip: "30308",
-		},
-		Lon:      -84.36697765,
-		Lat:      33.7707305,
-		Email:    "info@4thandswift.com",
-		Phone:    "(678) 904-0160",
-		Website:  "http://www.4thandswift.com/",
-		Logo:     "fourth-and-swift.png",
 		Category: models.Resturaunt,
 	}
 	bantamAndBiddy = &models.Organization{
@@ -164,7 +151,7 @@ var (
 	}
 
 	accounts = []*models.Account{
-		kCone, gYeremian, jWilliams, sDoty, kPeak, gCameli, kWalker, jDelp, cBarrow, tRogers, missy, brenda, natasha, aSmith, anna, leah, jamie,
+		kCone, gYeremian, sDoty, kPeak, gCameli, kWalker, jDelp, cBarrow, tRogers, missy, brenda, natasha, aSmith, anna, leah, jamie,
 	}
 
 	communities = []*models.Community{
@@ -172,7 +159,7 @@ var (
 	}
 
 	organizations = []*models.Organization{
-		atlantaBeltLinePartnership, tenthAndPiedmont, fourthAndSwift, bantamAndBiddy, cajaPopcorn, camelisPizza, chickABiddy, communityGroundsCoffeeshop, frogsCantina, gsMidtown,
+		atlantaBeltLinePartnership, tenthAndPiedmont, bantamAndBiddy, cajaPopcorn, camelisPizza, chickABiddy, communityGroundsCoffeeshop, frogsCantina, gsMidtown,
 	}
 
 	operators = []struct {
@@ -181,7 +168,6 @@ var (
 	}{
 		{kCone, atlantaBeltLinePartnership},
 		{gYeremian, tenthAndPiedmont},
-		{jWilliams, fourthAndSwift},
 		{sDoty, bantamAndBiddy},
 		{kPeak, cajaPopcorn},
 		{gCameli, camelisPizza},
@@ -198,7 +184,6 @@ var (
 	}{
 		{atlantaBeltLine, atlantaBeltLinePartnership, true},
 		{atlantaBeltLine, tenthAndPiedmont, false},
-		{atlantaBeltLine, fourthAndSwift, false},
 		{atlantaBeltLine, bantamAndBiddy, false},
 		{atlantaBeltLine, cajaPopcorn, false},
 		{atlantaBeltLine, camelisPizza, false},
@@ -215,11 +200,6 @@ var (
 		{
 			tenthAndPiedmont, []*models.Promotion{
 				{Name: "10% Off", Exclusions: "alcohol excluded, dinner and dine-in only, one discount per table, not combined with other offers, not valid for special events"},
-			},
-		},
-		{
-			fourthAndSwift, []*models.Promotion{
-				{Name: "15% Off Food Purchases"},
 			},
 		},
 		{
@@ -311,7 +291,7 @@ func Initialize(db *sqlx.DB, store *minio.Client, dir string) error {
 		}
 
 		if logo := operator.organization.Logo; logo != "" {
-			file, err := os.Open(path.Join(dir, logo))
+			file, err := os.Open(path.Join(dir, "logos", logo))
 			if err != nil {
 				return err
 			}
@@ -326,6 +306,26 @@ func Initialize(db *sqlx.DB, store *minio.Client, dir string) error {
 		if membership.isAdministrator {
 			if err := membership.community.Create(membership.organization.ID, db); err != nil {
 				return err
+			}
+			if icon := membership.organization.Icon; icon != "" {
+				file, err := os.Open(path.Join(dir, "icons", icon))
+				if err != nil {
+					return err
+				}
+				defer file.Close()
+				if err := membership.organization.UploadIcon(file, store); err != nil {
+					return err
+				}
+			}
+			if geoJSON := membership.community.GeoJSON; geoJSON != "" {
+				file, err := os.Open(path.Join(dir, "geojson", geoJSON))
+				if err != nil {
+					return err
+				}
+				defer file.Close()
+				if err := membership.community.UploadGeoJSON(file, store); err != nil {
+					return err
+				}
 			}
 		} else {
 			co := models.CommunityOrganization{CommunityID: membership.community.ID, OrganizationID: membership.organization.ID}

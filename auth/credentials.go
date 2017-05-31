@@ -15,7 +15,7 @@ type Credentials struct {
 // Authenticate retrieves an account object using the provided credentials.
 // If the password hashes validate, then the account will be returned.
 func (creds Credentials) Authenticate(c *Config) (models.Account, error) {
-	account, err := models.GetAccountByEmail(creds.Email, c.Client)
+	account, err := models.GetAccountByEmail(creds.Email, c.DBClient)
 	if err != nil {
 		return models.Account{}, errors.Wrap(err, errAccountNotFound.Error())
 	}

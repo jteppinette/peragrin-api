@@ -30,9 +30,16 @@ func (c *Config) ListOrganizationsHandler(r *http.Request) *service.Response {
 		return service.NewResponse(errAuthenticationRequired, http.StatusUnauthorized, nil)
 	}
 
-	organizations, err := models.GetOrganizationsByAccount(account.ID, c.Client)
+	organizations, err := models.GetOrganizationsByAccount(account.ID, c.DBClient)
 	if err != nil {
 		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+
+	// TODO: Mock out the static store.
+	if c.StoreClient != nil {
+		if err := organizations.SetPresignedLogoLinks(c.StoreClient); err != nil {
+			return service.NewResponse(err, http.StatusBadRequest, nil)
+		}
 	}
 
 	return service.NewResponse(nil, http.StatusOK, organizations)
@@ -62,7 +69,7 @@ func (c *Config) CreateOrganizationHandler(r *http.Request) *service.Response {
 		}).Error(errors.Wrap(err, errGeocode.Error()))
 	}
 
-	if err := organization.Create(account.ID, c.Client); err != nil {
+	if err := organization.Create(account.ID, c.DBClient); err != nil {
 		return service.NewResponse(errors.Wrap(err, errCreateOrganization.Error()), http.StatusBadRequest, nil)
 	}
 	return service.NewResponse(nil, http.StatusCreated, organization)
@@ -101,7 +108,7 @@ func (c *Config) RegisterHandler(r *http.Request) *service.Response {
 
 	a := models.Account{Email: creds.Email}
 	a.SetPassword(creds.Password)
-	if err := a.Save(c.Client); err != nil {
+	if err := a.Save(c.DBClient); err != nil {
 		return service.NewResponse(errors.Wrap(err, errRegistrationFailed.Error()), http.StatusBadRequest, nil)
 	}
 

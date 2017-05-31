@@ -2,6 +2,7 @@ package auth
 
 import (
 	"github.com/jmoiron/sqlx"
+	minio "github.com/minio/minio-go"
 	"github.com/unrolled/render"
 )
 
@@ -10,12 +11,13 @@ var (
 )
 
 type Config struct {
-	Client           *sqlx.DB
+	DBClient         *sqlx.DB
+	StoreClient      *minio.Client
 	TokenSecret      string
 	Clock            timer
 	LocationIQAPIKey string
 }
 
-func Init(client *sqlx.DB, tokenSecret string, locationIQAPIKey string) *Config {
-	return &Config{client, tokenSecret, clock{}, locationIQAPIKey}
+func Init(dbClient *sqlx.DB, storeClient *minio.Client, tokenSecret string, locationIQAPIKey string) *Config {
+	return &Config{dbClient, storeClient, tokenSecret, clock{}, locationIQAPIKey}
 }

@@ -13,7 +13,7 @@ import (
 
 // ListHandler returns a response with all communities.
 func (c *Config) ListHandler(r *http.Request) *service.Response {
-	communities, err := models.GetCommunities(c.Client)
+	communities, err := models.GetCommunities(c.DBClient)
 	if err != nil {
 		return service.NewResponse(err, http.StatusBadRequest, nil)
 	}
@@ -28,10 +28,15 @@ func (c *Config) ListOrganizationsHandler(r *http.Request) *service.Response {
 		return service.NewResponse(errors.Wrap(err, errCommunityIDRequired.Error()), http.StatusBadRequest, nil)
 	}
 
-	organizations, err := models.GetOrganizationsByCommunity(communityID, c.Client)
+	organizations, err := models.GetOrganizationsByCommunity(communityID, c.DBClient)
 	if err != nil {
 		return service.NewResponse(err, http.StatusBadRequest, nil)
 	}
+
+	if err := organizations.SetPresignedLogoLinks(c.StoreClient); err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+
 	return service.NewResponse(nil, http.StatusOK, organizations)
 }
 
@@ -43,7 +48,7 @@ func (c *Config) ListPostsHandler(r *http.Request) *service.Response {
 		return service.NewResponse(errors.Wrap(err, errCommunityIDRequired.Error()), http.StatusBadRequest, nil)
 	}
 
-	posts, err := models.GetPostsByCommunity(communityID, c.Client)
+	posts, err := models.GetPostsByCommunity(communityID, c.DBClient)
 	if err != nil {
 		return service.NewResponse(err, http.StatusBadRequest, nil)
 	}

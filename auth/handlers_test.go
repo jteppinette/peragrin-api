@@ -59,7 +59,7 @@ func TestLoginHandler(t *testing.T) {
 	for _, test := range tests {
 		db, mock, _ := sqlmock.New()
 		defer db.Close()
-		config := Init(sqlx.NewDb(db, "sqlmock"), "secret", "")
+		config := Init(sqlx.NewDb(db, "sqlmock"), nil, "secret", "")
 		config.Clock = mockClock{}
 
 		creds := Credentials{}
@@ -131,7 +131,7 @@ func TestRequiredMiddleware(t *testing.T) {
 	for _, test := range tests {
 		db, mock, _ := sqlmock.New()
 		defer db.Close()
-		config := Init(sqlx.NewDb(db, "sqlmock"), "secret", "")
+		config := Init(sqlx.NewDb(db, "sqlmock"), nil, "secret", "")
 
 		var expected *sqlmock.ExpectedQuery
 		if email, _, ok := parseBasicAuth(test.header.Get("Authorization")); ok {

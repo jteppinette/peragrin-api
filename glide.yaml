@@ -26,3 +26,5 @@ import:
   version: ~0.8.0
 - package: github.com/Sirupsen/logrus
   version: ~0.11.5
+- package: github.com/minio/minio-go
+  version: ~2.1.0

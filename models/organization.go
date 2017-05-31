@@ -1,8 +1,16 @@
 package models
 
 import (
+	"fmt"
+	"io"
+	"strconv"
+	"time"
+
 	"github.com/jmoiron/sqlx"
+	minio "github.com/minio/minio-go"
 )
+
+const bucket = "peragrin"
 
 // Organizations is a list of organization structs.
 type Organizations []Organization
@@ -19,6 +27,7 @@ type Organization struct {
 	Email   string  `json:"email"`
 	Phone   string  `json:"phone"`
 	Website string  `json:"website"`
+	Logo    string  `json:"logo"`
 
 	// IsAdministrator is only populated when this organization
 	// is in the context of a community.
@@ -33,6 +42,42 @@ func (o *Organization) SetGeo(key string) error {
 	var err error
 	if o.Lon, o.Lat, err = o.geocode(key); err != nil {
 		return err
+	}
+	return nil
+}
+
+// UploadLogo puts a new object in the static store.
+func (o *Organization) UploadLogo(reader io.Reader, client *minio.Client) error {
+	_, err := client.PutObject(bucket, fmt.Sprintf("logos/%s", strconv.Itoa(o.ID)), reader, "application/octet-stream")
+	return err
+}
+
+// SetPresignedLogoLink sets the Logo field with a presigned get request url.
+func (o *Organization) SetPresignedLogoLink(client *minio.Client) error {
+	object := fmt.Sprintf("logos/%s", strconv.Itoa(o.ID))
+
+	// If this object does not exist, then do not set the presigned link.
+	// TODO: Store a reference to the object in the database to determine existence.
+	_, err := client.StatObject(bucket, object)
+	if err != nil {
+		return nil
+	}
+
+	url, err := client.PresignedGetObject(bucket, object, time.Second*24*60*60, nil)
+	if err != nil {
+		return err
+	}
+	o.Logo = url.String()
+	return nil
+}
+
+// SetPresignedLogoLinks sets the Logo field with a presgned get request url for each organization provided.
+func (organizations Organizations) SetPresignedLogoLinks(client *minio.Client) error {
+	for i, o := range organizations {
+		if err := o.SetPresignedLogoLink(client); err != nil {
+			return err
+		}
+		organizations[i] = o
 	}
 	return nil
 }

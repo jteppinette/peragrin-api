@@ -1,11 +1,14 @@
 package fixture
 
 import (
+	"os"
+	"path"
 	"strings"
 	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
+	minio "github.com/minio/minio-go"
 	"gitlab.com/peragrin/api/common"
 	"gitlab.com/peragrin/api/models"
 )
@@ -28,6 +31,7 @@ var (
 		Email:   "contact@metroatlantachamber.com",
 		Phone:   "(678) 390-2910",
 		Website: "https://midtownatlanta.com",
+		Logo:    "metro-atlanta-chamber.png",
 	}
 	bobbyDoddStadium = &models.Organization{
 		Name: "Bobby Dodd Stadium",
@@ -39,6 +43,7 @@ var (
 		Email:   "contact-us@bobby-dodd-stadium.com",
 		Phone:   "(770) 320-3202",
 		Website: "gt.edu",
+		Logo:    "bobby-dodd-stadium.png",
 	}
 	emoryPublix = &models.Organization{
 		Name: "Publix Super Market at Emory Commons",
@@ -120,9 +125,18 @@ var (
 
 // Initialize loads fixture data intot the current database. Any previously
 // uploaded data will be deleted.
-func Initialize(client *sqlx.DB) error {
+func Initialize(db *sqlx.DB, store *minio.Client, dir string) error {
 
-	if _, err := client.Exec(`
+	const bucket = "peragrin"
+	const location = "us-east-1"
+
+	if err := store.MakeBucket(bucket, location); err != nil {
+		if exists, err := store.BucketExists(bucket); err != nil || !exists {
+			return err
+		}
+	}
+
+	if _, err := db.Exec(`
 			DELETE FROM Community;
 			DELETE FROM Organization;
 			DELETE FROM Account;
@@ -138,28 +152,39 @@ func Initialize(client *sqlx.DB) error {
 		if err := account.SetPassword(strings.Split(account.Email, "@")[0]); err != nil {
 			return err
 		}
-		if err := account.Save(client); err != nil {
+		if err := account.Save(db); err != nil {
 			return err
 		}
 	}
 
 	for _, operator := range operators {
-		if err := operator.organization.Create(operator.account.ID, client); err != nil {
+		if err := operator.organization.Create(operator.account.ID, db); err != nil {
 			return err
 		}
-		if err := hours.Set(operator.organization.ID, client); err != nil {
+		if err := hours.Set(operator.organization.ID, db); err != nil {
 			return err
+		}
+
+		if logo := operator.organization.Logo; logo != "" {
+			file, err := os.Open(path.Join(dir, logo))
+			if err != nil {
+				return err
+			}
+			defer file.Close()
+			if err := operator.organization.UploadLogo(file, store); err != nil {
+				return err
+			}
 		}
 	}
 
 	for _, membership := range memberships {
 		if membership.isAdministrator {
-			if err := membership.community.Create(membership.organization.ID, client); err != nil {
+			if err := membership.community.Create(membership.organization.ID, db); err != nil {
 				return err
 			}
 		} else {
 			co := models.CommunityOrganization{CommunityID: membership.community.ID, OrganizationID: membership.organization.ID}
-			if err := co.Create(client); err != nil {
+			if err := co.Create(db); err != nil {
 				return err
 			}
 		}
@@ -168,7 +193,7 @@ func Initialize(client *sqlx.DB) error {
 	for _, post := range posts {
 		for _, item := range post.items {
 			item.OrganizationID = post.organization.ID
-			if err := item.Save(client); err != nil {
+			if err := item.Save(db); err != nil {
 				return err
 			}
 		}
@@ -177,7 +202,7 @@ func Initialize(client *sqlx.DB) error {
 	for _, promotion := range promotions {
 		for _, item := range promotion.items {
 			item.OrganizationID = promotion.organization.ID
-			if err := item.Save(client); err != nil {
+			if err := item.Save(db); err != nil {
 				return err
 			}
 		}

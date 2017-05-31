@@ -25,7 +25,8 @@ func Migrate(client *sqlx.DB) error {
 			lat		float,
 			email varchar(60) NOT NULL,
 			phone varchar(20) NOT NULL,
-			website varchar(60) NOT NULL
+			website varchar(60) NOT NULL,
+			category varchar(30)
 		);
 
 		CREATE TABLE IF NOT EXISTS Promotion (

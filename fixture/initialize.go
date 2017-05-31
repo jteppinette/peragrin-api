@@ -7,75 +7,179 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/lib/pq"
 	minio "github.com/minio/minio-go"
-	"gitlab.com/peragrin/api/common"
 	"gitlab.com/peragrin/api/models"
 )
 
 var (
-	jteppinette = &models.Account{Email: "jteppinette@jteppinette.com"}
-	sajohnson   = &models.Account{Email: "sajohnson@sajohnson.com"}
-	bjones      = &models.Account{Email: "bjones@bjones.com"}
+	kCone     = &models.Account{Email: "kathleen@billkaelin.com"}
+	gYeremian = &models.Account{Email: "gilbert@communitashospitality.com"}
+	jWilliams = &models.Account{Email: "julie@williams.com"}
+	sDoty     = &models.Account{Email: "shaun@bantamandbiddy.com"}
+	kPeak     = &models.Account{Email: "kevin@peak.com"}
+	gCameli   = &models.Account{Email: "george@cameli.com"}
+	kWalker   = &models.Account{Email: "kelsey&walker.com"}
+	jDelp     = &models.Account{Email: "jeff@fcsministries.org"}
+	cBarrow   = &models.Account{Email: "clintbarrow@thiscompany.com"}
+	tRogers   = &models.Account{Email: "tyler@kingofpops.net"}
+	missy     = &models.Account{Email: "missy@missy.com"}
+	brenda    = &models.Account{Email: "brenda@360media.net"}
+	natasha   = &models.Account{Email: "natasha@vicbrands.com"}
+	aSmith    = &models.Account{Email: "andrea@ladybirdatlanta.com"}
+	anna      = &models.Account{Email: "anna@saviprovisions.com"}
+	leah      = &models.Account{Email: "leah@kalemecrazy.net"}
+	jamie     = &models.Account{Email: "jamie.saye26@gmail.com"}
 
-	midtown = &models.Community{Name: "Midtown Atlanta"}
-	decatur = &models.Community{Name: "Decatur Georgia"}
+	atlantaBeltLine = &models.Community{Name: "Atlanta BeltLine"}
 
-	midtownAtlantaChamber = &models.Organization{
-		Name: "Metro Atlanta Chamber",
+	atlantaBeltLinePartnership = &models.Organization{
+		Name: "Atlanta BeltLine Partnership",
 		Address: models.Address{
-			Street: "191 Peachtree St NE #3400", City: "Atlanta", State: "GA", Country: "United States", Zip: "30303",
+			Street: "112 Krog St NE #14", City: "Atlanta", State: "GA", Country: "United States", Zip: "30307",
 		},
-		Lon:     -84.38642,
-		Lat:     33.759115,
-		Email:   "contact@metroatlantachamber.com",
-		Phone:   "(678) 390-2910",
-		Website: "https://midtownatlanta.com",
-		Logo:    "metro-atlanta-chamber.png",
+		Lon:     -84.3669705,
+		Lat:     33.7561718,
+		Email:   "info@atlbeltlinepartnership.org",
+		Phone:   "(404) 446-4404",
+		Website: "beltline.org",
+		Logo:    "atlanta-belt-line-partnership.png",
 	}
-	bobbyDoddStadium = &models.Organization{
-		Name: "Bobby Dodd Stadium",
+
+	tenthAndPiedmont = &models.Organization{
+		Name: "10th & Piedmont",
 		Address: models.Address{
-			Street: "North Avenue NW", City: "Atlanta", State: "GA", Country: "United States", Zip: "30313",
+			Street: "991 Piedmont Ave NE", City: "Atlanta", State: "GA", Country: "United States", Zip: "30309",
 		},
-		Lon:     -84.3903448,
-		Lat:     33.7712937,
-		Email:   "contact-us@bobby-dodd-stadium.com",
-		Phone:   "(770) 320-3202",
-		Website: "gt.edu",
-		Logo:    "bobby-dodd-stadium.png",
+		Lon:     -81.371266557291,
+		Lat:     40.8058975055397,
+		Email:   "info@10thandpiedmont.com",
+		Phone:   "(404) 602-5510",
+		Website: "http://www.10thp.com/",
+		Logo:    "tenth-and-piedmont.png",
 	}
-	emoryPublix = &models.Organization{
-		Name: "Publix Super Market at Emory Commons",
+	fourthAndSwift = &models.Organization{
+		Name: "4th and Swift Restaurant",
 		Address: models.Address{
-			Street: "2155 N Decatur Rd", City: "Decatur", State: "GA", Country: "United States", Zip: "30033",
+			Street: "621 North Avenue NE", City: "Atlanta", State: "GA", Country: "United States", Zip: "30308",
 		},
-		Lon:     -84.30444,
-		Lat:     33.79023,
-		Email:   "contact@publix.com",
-		Phone:   "(770) 402-2309",
-		Website: "publix.com",
+		Lon:     -84.36697765,
+		Lat:     33.7707305,
+		Email:   "info@4thandswift.com",
+		Phone:   "(678) 904-0160",
+		Website: "http://www.4thandswift.com/",
+		Logo:    "fourth-and-swift.png",
+	}
+	bantamAndBiddy = &models.Organization{
+		Name: "Bantam & Biddy",
+		Address: models.Address{
+			Street: "1544 Piedmont Ave NE #301", City: "Atlanta", State: "GA", Country: "United States", Zip: "30324",
+		},
+		Lon:     -84.3688771243521,
+		Lat:     33.7984687036734,
+		Email:   "shaun@bantamandbiddy.com",
+		Phone:   "(404) 907-3469",
+		Website: "http://www.bantamandbiddy.com/",
+		Logo:    "bantam-and-biddy.png",
+	}
+	cajaPopcorn = &models.Organization{
+		Name: "CaJa Popcorn",
+		Address: models.Address{
+			Street: "2333 Peachtree Rd", City: "Atlanta", State: "GA", Country: "United States", Zip: "30305",
+		},
+		Lon:     -84.3696849,
+		Lat:     33.844624,
+		Email:   "contact@cajapopcorn.com",
+		Phone:   "(404) 846-2156",
+		Website: "http://www.cajapopcorn.com/",
+		Logo:    "caja-popcorn.png",
+	}
+	camelisPizza = &models.Organization{
+		Name: "Cameli's Pizza",
+		Address: models.Address{
+			Street: "337 Moreland Ave NE", City: "Atlanta", State: "GA", Country: "United States", Zip: "30307",
+		},
+		Lon:     -84.3491539,
+		Lat:     33.757426,
+		Email:   "info@camelispizza.com",
+		Phone:   "(404) 249-9020",
+		Website: "http://www.camelispizza.com/",
+		Logo:    "camelis-pizza.png",
+	}
+	chickABiddy = &models.Organization{
+		Name: "Chick-a-Biddy",
+		Address: models.Address{
+			Street: "264 19th St NW", City: "Atlanta", State: "GA", Country: "United States", Zip: "30363",
+		},
+		Lon:     -84.39713372,
+		Lat:     33.79346104,
+		Email:   "kelsey@lizlapiduspr.com",
+		Phone:   "(404) 688-1466",
+		Website: "http://www.chickabiddyatl.com/",
+		Logo:    "chick-a-biddy.png",
+	}
+	communityGroundsCoffeeshop = &models.Organization{
+		Name: "Community Grounds Coffeeshop",
+		Address: models.Address{
+			Street: "1297 McDonough Blvd SE", City: "Atlanta", State: "GA", Country: "United States", Zip: "30315",
+		},
+		Lon:     -84.3829909,
+		Lat:     33.717947,
+		Email:   "jeff@fcsministries.org",
+		Phone:   "(404) 586-0692",
+		Website: "https://communitygrounds.com",
+		Logo:    "community-grounds-coffeeshop.png",
+	}
+	frogsCantina = &models.Organization{
+		Name: "F.R.O.G.S. Cantina",
+		Address: models.Address{
+			Street: "931 Monroe Dr", City: "Atlanta", State: "GA", Country: "United States", Zip: "30308",
+		},
+		Lon:     -84.36819,
+		Lat:     33.780192,
+		Email:   "clintbarrow@thiscompany.com",
+		Phone:   "(404) 607-9967",
+		Website: "http://www.frogsmidtown.com/",
+		Logo:    "frogs-cantina.png",
+	}
+	gsMidtown = &models.Organization{
+		Name: "G's Midtown",
+		Address: models.Address{
+			Street: "219 10th St NE", City: "Atlanta", State: "GA", Country: "United States", Zip: "30309",
+		},
+		Lon:     -84.3823024,
+		Lat:     33.7816376,
+		Email:   "gilbert@communitashospitality.com",
+		Phone:   "(404) 872-8012",
+		Website: "http://www.gsmidtown.com/",
+		Logo:    "gs-midtown.png",
 	}
 
 	accounts = []*models.Account{
-		jteppinette, sajohnson, bjones,
+		kCone, gYeremian, jWilliams, sDoty, kPeak, gCameli, kWalker, jDelp, cBarrow, tRogers, missy, brenda, natasha, aSmith, anna, leah, jamie,
 	}
 
 	communities = []*models.Community{
-		midtown, decatur,
+		atlantaBeltLine,
 	}
 
 	organizations = []*models.Organization{
-		midtownAtlantaChamber, bobbyDoddStadium, emoryPublix,
+		atlantaBeltLinePartnership, tenthAndPiedmont, fourthAndSwift, bantamAndBiddy, cajaPopcorn, camelisPizza, chickABiddy, communityGroundsCoffeeshop, frogsCantina, gsMidtown,
 	}
 
 	operators = []struct {
 		account      *models.Account
 		organization *models.Organization
 	}{
-		{jteppinette, midtownAtlantaChamber},
-		{sajohnson, bobbyDoddStadium},
-		{bjones, emoryPublix},
+		{kCone, atlantaBeltLinePartnership},
+		{gYeremian, tenthAndPiedmont},
+		{jWilliams, fourthAndSwift},
+		{sDoty, bantamAndBiddy},
+		{kPeak, cajaPopcorn},
+		{gCameli, camelisPizza},
+		{kWalker, chickABiddy},
+		{jDelp, communityGroundsCoffeeshop},
+		{cBarrow, frogsCantina},
+		{gYeremian, gsMidtown},
 	}
 
 	memberships = []struct {
@@ -83,18 +187,16 @@ var (
 		organization    *models.Organization
 		isAdministrator bool
 	}{
-		{midtown, midtownAtlantaChamber, true},
-		{midtown, bobbyDoddStadium, false},
-		{decatur, emoryPublix, true},
-	}
-
-	posts = []struct {
-		organization *models.Organization
-		items        []*models.Post
-	}{
-		{midtownAtlantaChamber, []*models.Post{{Content: "Hey! This is your midtown atlanta chamber, live on Peragrin!"}}},
-		{bobbyDoddStadium, []*models.Post{{Content: "Hey everyone! Come down to Bobby Dodd for the game today!"}, {Content: "Thats a win!"}}},
-		{emoryPublix, []*models.Post{{Content: "We have great specials today on subs! Come check it out!"}}},
+		{atlantaBeltLine, atlantaBeltLinePartnership, true},
+		{atlantaBeltLine, tenthAndPiedmont, false},
+		{atlantaBeltLine, fourthAndSwift, false},
+		{atlantaBeltLine, bantamAndBiddy, false},
+		{atlantaBeltLine, cajaPopcorn, false},
+		{atlantaBeltLine, camelisPizza, false},
+		{atlantaBeltLine, chickABiddy, false},
+		{atlantaBeltLine, communityGroundsCoffeeshop, false},
+		{atlantaBeltLine, frogsCantina, false},
+		{atlantaBeltLine, gsMidtown, false},
 	}
 
 	promotions = []struct {
@@ -102,14 +204,48 @@ var (
 		items        []*models.Promotion
 	}{
 		{
-			bobbyDoddStadium, []*models.Promotion{
-				{Name: "10% Off Food Purchases", Description: "All food purchases will be 10% off for members!"},
-				{Name: "5% Off Jerseys", Description: "Home team jerseys will be 10% off for members!", Exclusions: "Seasons Ticket Holder Required", Expiration: common.JSONNullTime{pq.NullTime{Time: time.Now().AddDate(0, 3, 0), Valid: true}}, IsSingleUse: true},
+			tenthAndPiedmont, []*models.Promotion{
+				{Name: "10% Off", Exclusions: "alcohol excluded, dinner and dine-in only, one discount per table, not combined with other offers, not valid for special events"},
 			},
 		},
 		{
-			emoryPublix, []*models.Promotion{
-				{Name: "15% Off Publix Subs", Description: "All members, come enjoy 15% off our subs during this limited time offer!", Expiration: common.JSONNullTime{pq.NullTime{Time: time.Now().AddDate(0, 0, 7), Valid: true}}},
+			fourthAndSwift, []*models.Promotion{
+				{Name: "15% Off Food Purchases"},
+			},
+		},
+		{
+			bantamAndBiddy, []*models.Promotion{
+				{Name: "10% Off Food Purchases", Exclusions: "alcohol excluded"},
+			},
+		},
+		{
+			cajaPopcorn, []*models.Promotion{
+				{Name: "10% Off"},
+			},
+		},
+		{
+			camelisPizza, []*models.Promotion{
+				{Name: "15% Off", Exclusions: "Dine in only, one discount per card, not combined with other offers."},
+			},
+		},
+		{
+			chickABiddy, []*models.Promotion{
+				{Name: "10% Off"},
+			},
+		},
+		{
+			communityGroundsCoffeeshop, []*models.Promotion{
+				{Name: "10% Off"},
+			},
+		},
+		{
+			frogsCantina, []*models.Promotion{
+				{Name: "Buy One Get One 'BeltLine Margaritas'", Exclusions: "1 per table; 1 visit per day"},
+			},
+		},
+		{
+			gsMidtown, []*models.Promotion{
+				{Name: "10% Off", Exclusions: "alcohol excluded, dinner and dine-in only, one discount per table, not combined with other offers, not valid for special events"},
 			},
 		},
 	}
@@ -185,15 +321,6 @@ func Initialize(db *sqlx.DB, store *minio.Client, dir string) error {
 		} else {
 			co := models.CommunityOrganization{CommunityID: membership.community.ID, OrganizationID: membership.organization.ID}
 			if err := co.Create(db); err != nil {
-				return err
-			}
-		}
-	}
-
-	for _, post := range posts {
-		for _, item := range post.items {
-			item.OrganizationID = post.organization.ID
-			if err := item.Save(db); err != nil {
 				return err
 			}
 		}

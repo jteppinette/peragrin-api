@@ -29,6 +29,14 @@ func Migrate(client *sqlx.DB) error {
 			category varchar(30)
 		);
 
+		CREATE TABLE IF NOT EXISTS Hours (
+			organizationID integer REFERENCES Organization ON DELETE CASCADE,
+			weekday int,
+			start int,
+			close int,
+			PRIMARY KEY (organizationID, weekday, start, close)
+		);
+
 		CREATE TABLE IF NOT EXISTS Promotion (
 			id				SERIAL PRIMARY KEY,
 			organizationID	integer REFERENCES Organization ON DELETE CASCADE,
@@ -40,17 +48,17 @@ func Migrate(client *sqlx.DB) error {
 		);
 		CREATE UNIQUE INDEX ON Promotion (organizationID, name);
 
-		CREATE TABLE IF NOT EXISTS Hours (
-			organizationID integer REFERENCES Organization ON DELETE CASCADE,
-			weekday int,
-			start int,
-			close int,
-			PRIMARY KEY (organizationID, weekday, start, close)
-		);
-
 		CREATE TABLE IF NOT EXISTS Community (
 			id			SERIAL PRIMARY KEY,
 			name		varchar(80) NOT NULL UNIQUE
+		);
+
+		CREATE TABLE IF NOT EXISTS GeoJSONOverlay (
+			name			varchar(40),
+			communityID		integer REFERENCES Community ON DELETE CASCADE,
+			data			jsonb,
+			style			jsonb,
+			PRIMARY KEY (communityID, name)
 		);
 
 		CREATE TABLE IF NOT EXISTS Post (

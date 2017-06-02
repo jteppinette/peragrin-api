@@ -18,10 +18,6 @@ func (c *Config) ListHandler(r *http.Request) *service.Response {
 		return service.NewResponse(err, http.StatusBadRequest, nil)
 	}
 
-	if err := communities.SetPresignedGeoJSONLinks(c.StoreClient); err != nil {
-		return service.NewResponse(err, http.StatusBadRequest, nil)
-	}
-
 	return service.NewResponse(nil, http.StatusOK, communities)
 }
 
@@ -46,6 +42,21 @@ func (c *Config) ListOrganizationsHandler(r *http.Request) *service.Response {
 	}
 
 	return service.NewResponse(nil, http.StatusOK, organizations)
+}
+
+// ListGeoJSONOverlaysHandler returns a response with all geo JSON overlays
+// in a given community.
+func (c *Config) ListGeoJSONOverlaysHandler(r *http.Request) *service.Response {
+	communityID, err := strconv.Atoi(mux.Vars(r)["communityID"])
+	if err != nil {
+		return service.NewResponse(errors.Wrap(err, errCommunityIDRequired.Error()), http.StatusBadRequest, nil)
+	}
+
+	geoJSONOverlays, err := models.GetGeoJSONOverlaysByCommunity(communityID, c.DBClient)
+	if err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+	return service.NewResponse(nil, http.StatusOK, geoJSONOverlays)
 }
 
 // ListPostsHandler returns a response with all posts

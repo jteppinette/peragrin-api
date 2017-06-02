@@ -29,6 +29,9 @@ func (h Hours) Set(organizationID int, client *sqlx.DB) error {
 	}()
 
 	_, err = tx.Exec("DELETE FROM Hours WHERE organizationID = $1", organizationID)
+	if err != nil {
+		return err
+	}
 
 	statement := "INSERT INTO Hours (organizationID, weekday, start, close) VALUES "
 	args := make([]interface{}, len(h)*4)
@@ -43,8 +46,11 @@ func (h Hours) Set(organizationID int, client *sqlx.DB) error {
 	}
 
 	_, err = tx.Exec(client.Rebind(statement[0:len(statement)-1]), args...)
+	if err != nil {
+		return err
+	}
 
-	return err
+	return nil
 }
 
 // GetHoursByOrganization returns the set of hours for the given organization.

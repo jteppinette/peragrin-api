@@ -1,12 +1,14 @@
 package fixture
 
 import (
+	"encoding/json"
 	"os"
 	"path"
 	"strings"
 	"time"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/jmoiron/sqlx/types"
 	minio "github.com/minio/minio-go"
 	"gitlab.com/peragrin/api/models"
 )
@@ -29,7 +31,32 @@ var (
 	leah      = &models.Account{Email: "leah@kalemecrazy.net"}
 	jamie     = &models.Account{Email: "jamie.saye26@gmail.com"}
 
-	atlantaBeltLine = &models.Community{Name: "Atlanta BeltLine", GeoJSON: "belt-line.geojson"}
+	atlantaBeltLine = &models.Community{Name: "Atlanta BeltLine"}
+
+	geoJSONOverlays = []struct {
+		community *models.Community
+		models.GeoJSONOverlay
+	}{
+		{
+			community: atlantaBeltLine,
+			GeoJSONOverlay: models.GeoJSONOverlay{
+				Name: "belt-line.geojson",
+				Style: types.JSONText([]byte(`
+					{
+						"property": "BPA_Segmen",
+						"base": {"weight": 2, "color": "white", "opacity": 1, "fillOpacity": 0.7},
+						"values": {
+							"Northside": {"fillColor": "#00aef4"},
+							"Northeast": {"fillColor": "#8bc932"},
+							"Southeast": {"fillColor": "#0061c2"},
+							"Southwest": {"fillColor": "#8bc932"},
+							"Westside": {"fillColor": "#0061c2"}
+						}
+					}
+				`)),
+			},
+		},
+	}
 
 	atlantaBeltLinePartnership = &models.Organization{
 		Name: "Atlanta BeltLine Partnership",
@@ -317,21 +344,25 @@ func Initialize(db *sqlx.DB, store *minio.Client, dir string) error {
 					return err
 				}
 			}
-			if geoJSON := membership.community.GeoJSON; geoJSON != "" {
-				file, err := os.Open(path.Join(dir, "geojson", geoJSON))
-				if err != nil {
-					return err
-				}
-				defer file.Close()
-				if err := membership.community.UploadGeoJSON(file, store); err != nil {
-					return err
-				}
-			}
 		} else {
 			co := models.CommunityOrganization{CommunityID: membership.community.ID, OrganizationID: membership.organization.ID}
 			if err := co.Create(db); err != nil {
 				return err
 			}
+		}
+	}
+
+	for _, overlay := range geoJSONOverlays {
+		file, err := os.Open(path.Join(dir, "geojson", overlay.Name))
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+		if err := json.NewDecoder(file).Decode(&overlay.Data); err != nil {
+			return err
+		}
+		if err := overlay.Create(overlay.community.ID, db); err != nil {
+			return err
 		}
 	}
 

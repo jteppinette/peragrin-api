@@ -45,11 +45,11 @@ var (
 		{
 			community: atlantaBeltLine,
 			GeoJSONOverlay: models.GeoJSONOverlay{
-				Name: "belt-line.geojson",
+				Name: "belt-line-zones.geojson",
 				Style: types.JSONText([]byte(`
 					{
 						"property": "BPA_Segmen",
-						"base": {"weight": 2, "color": "white", "opacity": 1, "fillOpacity": 0.7},
+						"base": {"weight": 3, "color": "white", "opacity": 1, "fillOpacity": 0.3},
 						"values": {
 							"Northside": {"fillColor": "#00aef4"},
 							"Northeast": {"fillColor": "#8bc932"},
@@ -59,6 +59,13 @@ var (
 						}
 					}
 				`)),
+			},
+		},
+		{
+			community: atlantaBeltLine,
+			GeoJSONOverlay: models.GeoJSONOverlay{
+				Name:  "belt-line.geojson",
+				Style: types.JSONText([]byte(`{"base": {"weight": 5, "color": "#726a6a"}}`)),
 			},
 		},
 	}

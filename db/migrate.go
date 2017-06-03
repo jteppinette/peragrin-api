@@ -50,7 +50,10 @@ func Migrate(client *sqlx.DB) error {
 
 		CREATE TABLE IF NOT EXISTS Community (
 			id			SERIAL PRIMARY KEY,
-			name		varchar(80) NOT NULL UNIQUE
+			name		varchar(80) NOT NULL UNIQUE,
+			lon			float,
+			lat			float,
+			zoom		int
 		);
 
 		CREATE TABLE IF NOT EXISTS GeoJSONOverlay (

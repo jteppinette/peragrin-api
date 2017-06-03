@@ -10,8 +10,11 @@ type Communities []Community
 // Community is a geographic area that supports joint interaction
 // between organizations and patrons.
 type Community struct {
-	ID   int    `json:"id"`
-	Name string `json:"name"`
+	ID   int     `json:"id"`
+	Name string  `json:"name"`
+	Lon  float64 `json:"lon"`
+	Lat  float64 `json:"lat"`
+	Zoom int     `json:"zoom"`
 
 	// IsAdministrator is only populated when this community
 	// is in the context of an organization.
@@ -35,7 +38,7 @@ func (c *Community) Create(organizationID int, client *sqlx.DB) error {
 		tx.Commit()
 	}()
 
-	err = tx.Get(c, "INSERT INTO Community (name) VALUES ($1) RETURNING *;", c.Name)
+	err = tx.Get(c, "INSERT INTO Community (name, lon, lat, zoom) VALUES ($1, $2, $3, $4) RETURNING *;", c.Name, c.Lon, c.Lat, c.Zoom)
 	if err != nil {
 		return err
 	}

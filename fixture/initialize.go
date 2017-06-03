@@ -31,7 +31,12 @@ var (
 	leah      = &models.Account{Email: "leah@kalemecrazy.net"}
 	jamie     = &models.Account{Email: "jamie.saye26@gmail.com"}
 
-	atlantaBeltLine = &models.Community{Name: "Atlanta BeltLine"}
+	atlantaBeltLine = &models.Community{
+		Name: "Atlanta BeltLine",
+		Lon:  -84.3669705,
+		Lat:  33.7561718,
+		Zoom: 13,
+	}
 
 	geoJSONOverlays = []struct {
 		community *models.Community

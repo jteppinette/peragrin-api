@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
@@ -57,7 +58,14 @@ func serve() {
 	r.Handle("/organizations/{organizationID:[0-9]+}/promotions", service.Handler(organizations.CreatePromotionHandler)).Methods(http.MethodPost)
 
 	log.Infof("initializing server: %s", viper.GetString("PORT"))
-	http.ListenAndServe(fmt.Sprintf(":%s", viper.GetString("PORT")), r)
+
+	server := &http.Server{
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		Addr:         fmt.Sprintf(":%s", viper.GetString("PORT")),
+		Handler:      r,
+	}
+	server.ListenAndServe()
 }
 
 // Serve instantiates the API server.

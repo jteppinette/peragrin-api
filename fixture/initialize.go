@@ -35,7 +35,7 @@ var (
 		Name: "Atlanta BeltLine",
 		Lon:  -84.3669705,
 		Lat:  33.7561718,
-		Zoom: 13,
+		Zoom: 12,
 	}
 
 	geoJSONOverlays = []struct {

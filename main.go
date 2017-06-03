@@ -29,13 +29,13 @@ func main() {
 			log.Infof("read configuration file: %s", cfp)
 		}
 
+		viper.AutomaticEnv()
+
 		level, err := log.ParseLevel(viper.GetString("LOG_LEVEL"))
 		if err != nil {
 			log.Fatal(err)
 		}
 		log.SetLevel(level)
-
-		viper.AutomaticEnv()
 	})
 
 	root := &cobra.Command{

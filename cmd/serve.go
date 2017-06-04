@@ -65,8 +65,9 @@ func serve() {
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		Addr:         fmt.Sprintf(":%s", viper.GetString("PORT")),
-		Handler:      r,
+		Handler:      http.TimeoutHandler(r, 15*time.Second, ""),
 	}
+	server.SetKeepAlivesEnabled(false)
 	server.ListenAndServe()
 }
 

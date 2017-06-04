@@ -95,6 +95,12 @@ func Migrate(client *sqlx.DB) error {
 			accountID		int REFERENCES Account ON DELETE CASCADE,
 			membershipID	int REFERENCES Membership ON DELETE CASCADE
 		);
+
+		CREATE TABLE IF NOT EXISTS AccountPromotion (
+			accountID	int REFERENCES Account ON DELETE CASCADE,
+			promotionID int REFERENCES Promotion ON DELETE CASCADE,
+			consumedAt	timestamp DEFAULT current_timestamp
+		);
 	`
 	if _, err := client.Exec(schema); err != nil {
 		return err

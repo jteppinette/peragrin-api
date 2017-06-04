@@ -16,6 +16,7 @@ import (
 	"gitlab.com/peragrin/api/db"
 	"gitlab.com/peragrin/api/memberships"
 	"gitlab.com/peragrin/api/organizations"
+	"gitlab.com/peragrin/api/promotions"
 	"gitlab.com/peragrin/api/service"
 )
 
@@ -36,6 +37,7 @@ func serve() {
 	organizations := organizations.Init(dbClient)
 	communities := communities.Init(dbClient, storeClient)
 	memberships := memberships.Init(dbClient)
+	promotions := promotions.Init(dbClient)
 
 	r := mux.NewRouter()
 	r.Handle("/auth/login", service.Handler(auth.LoginHandler))
@@ -63,6 +65,8 @@ func serve() {
 	r.Handle("/organizations/{organizationID:[0-9]+}/hours", service.Handler(organizations.ListHoursHandler)).Methods(http.MethodGet)
 	r.Handle("/organizations/{organizationID:[0-9]+}/promotions", service.Handler(organizations.ListPromotionsHandler)).Methods(http.MethodGet)
 	r.Handle("/organizations/{organizationID:[0-9]+}/promotions", service.Handler(organizations.CreatePromotionHandler)).Methods(http.MethodPost)
+
+	r.Handle("/promotions/{promotionID:[0-9]+}/redeem", auth.RequiredMiddleware(promotions.RedeemHandler)).Methods(http.MethodPost)
 
 	log.Infof("initializing server: %s", viper.GetString("PORT"))
 

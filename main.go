@@ -74,6 +74,7 @@ func main() {
 
 	root.AddCommand(cmd.Migrate)
 	root.AddCommand(cmd.CreateFixtureData)
+	root.AddCommand(cmd.LoadABP)
 	root.AddCommand(cmd.Serve)
 
 	if err := root.Execute(); err != nil {

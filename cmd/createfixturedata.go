@@ -22,7 +22,7 @@ func createfixturedata() {
 	}
 
 	log.Info("creating fixture data - this will remove all data from the database")
-	if err := fixture.Initialize(dbClient, storeClient, viper.GetString("FIXTURE_FILES_DIR")); err != nil {
+	if err := fixture.Initialize(dbClient, storeClient, viper.GetString("DIR")); err != nil {
 		log.Fatal(err)
 	}
 	log.Info("completed successfully")
@@ -39,6 +39,6 @@ func init() {
 		},
 	}
 
-	CreateFixtureData.PersistentFlags().StringP("fixture-files-dir", "", "/etc/peragrin/fixture", "absolure directory of fixture files")
-	viper.BindPFlag("FIXTURE_FILES_DIR", CreateFixtureData.PersistentFlags().Lookup("fixture-files-dir"))
+	CreateFixtureData.PersistentFlags().StringP("dir", "", "/etc/peragrin/fixture", "absolure directory of fixture files")
+	viper.BindPFlag("DIR", CreateFixtureData.PersistentFlags().Lookup("dir"))
 }

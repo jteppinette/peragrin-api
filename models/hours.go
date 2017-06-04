@@ -6,12 +6,15 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-// Hours represents a single days hours of operation.
-type Hours []struct {
+// Hour is a single day's schedule.
+type Hour struct {
 	Weekday time.Weekday `json:"weekday"`
 	Start   int          `json:"start"`
 	Close   int          `json:"close"`
 }
+
+// Hours represents the full week schedule.
+type Hours []Hour
 
 // Set replaces an oragnizations hours of operation.
 func (h Hours) Set(organizationID int, client *sqlx.DB) error {

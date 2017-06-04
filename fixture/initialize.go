@@ -386,6 +386,7 @@ func Initialize(db *sqlx.DB, store *minio.Client, dir string) error {
 			DELETE FROM CommunityOrganization;
 			DELETE FROM Membership;
 			DELETE FROM AccountMembership;
+			DELETE FROM AccountPromotion;
 	`); err != nil {
 		return err
 	}

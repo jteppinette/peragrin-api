@@ -1,5 +1,6 @@
 package models
 
 const (
-	Restaurant = "Restaurant"
+	Restaurant    = "Restaurant"
+	Entertainment = "Entertainment"
 )

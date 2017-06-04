@@ -1,6 +1,8 @@
 package models
 
 import (
+	"strings"
+
 	"github.com/jmoiron/sqlx"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -73,7 +75,7 @@ func (a *Account) CreateWithMembership(membershipID int, client *sqlx.DB) error 
 // email address. If there is not matching account, then an error is returned.
 func GetAccountByEmail(email string, client *sqlx.DB) (*Account, error) {
 	a := &Account{}
-	if err := client.Get(a, "SELECT * FROM Account WHERE email = $1;", email); err != nil {
+	if err := client.Get(a, "SELECT * FROM Account WHERE LOWER(email) = $1;", strings.ToLower(email)); err != nil {
 		return nil, err
 	}
 	return a, nil

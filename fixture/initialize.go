@@ -169,7 +169,7 @@ var (
 		Phone:    "(404) 602-5510",
 		Website:  "http://www.10thp.com/",
 		Logo:     "tenth-and-piedmont.png",
-		Category: models.Resturaunt,
+		Category: models.Restaurant,
 	}
 	bantamAndBiddy = &models.Organization{
 		Name: "Bantam & Biddy",
@@ -182,7 +182,7 @@ var (
 		Phone:    "(404) 907-3469",
 		Website:  "http://www.bantamandbiddy.com/",
 		Logo:     "bantam-and-biddy.png",
-		Category: models.Resturaunt,
+		Category: models.Restaurant,
 	}
 	cajaPopcorn = &models.Organization{
 		Name: "CaJa Popcorn",
@@ -195,7 +195,7 @@ var (
 		Phone:    "(404) 846-2156",
 		Website:  "http://www.cajapopcorn.com/",
 		Logo:     "caja-popcorn.png",
-		Category: models.Resturaunt,
+		Category: models.Restaurant,
 	}
 	camelisPizza = &models.Organization{
 		Name: "Cameli's Pizza",
@@ -208,7 +208,7 @@ var (
 		Phone:    "(404) 249-9020",
 		Website:  "http://www.camelispizza.com/",
 		Logo:     "camelis-pizza.png",
-		Category: models.Resturaunt,
+		Category: models.Restaurant,
 	}
 	chickABiddy = &models.Organization{
 		Name: "Chick-a-Biddy",
@@ -221,7 +221,7 @@ var (
 		Phone:    "(404) 688-1466",
 		Website:  "http://www.chickabiddyatl.com/",
 		Logo:     "chick-a-biddy.png",
-		Category: models.Resturaunt,
+		Category: models.Restaurant,
 	}
 	communityGroundsCoffeeshop = &models.Organization{
 		Name: "Community Grounds Coffeeshop",
@@ -234,7 +234,7 @@ var (
 		Phone:    "(404) 586-0692",
 		Website:  "https://communitygrounds.com",
 		Logo:     "community-grounds-coffeeshop.png",
-		Category: models.Resturaunt,
+		Category: models.Restaurant,
 	}
 	frogsCantina = &models.Organization{
 		Name: "F.R.O.G.S. Cantina",
@@ -247,7 +247,7 @@ var (
 		Phone:    "(404) 607-9967",
 		Website:  "http://www.frogsmidtown.com/",
 		Logo:     "frogs-cantina.png",
-		Category: models.Resturaunt,
+		Category: models.Restaurant,
 	}
 	gsMidtown = &models.Organization{
 		Name: "G's Midtown",
@@ -260,7 +260,7 @@ var (
 		Phone:    "(404) 872-8012",
 		Website:  "http://www.gsmidtown.com/",
 		Logo:     "gs-midtown.png",
-		Category: models.Resturaunt,
+		Category: models.Restaurant,
 	}
 
 	accounts = []*models.Account{

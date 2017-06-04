@@ -1,5 +1,5 @@
 package models
 
 const (
-	Resturaunt = "Resturaunt"
+	Restaurant = "Restaurant"
 )

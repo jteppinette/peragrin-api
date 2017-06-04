@@ -38,22 +38,78 @@ var (
 		Zoom: 12,
 	}
 
+	trekker       = &models.Membership{Name: "Trekker", Description: "Trekker"}
+	explorer      = &models.Membership{Name: "Explorer", Description: "Explorer"}
+	pathfinder    = &models.Membership{Name: "Pathfinder", Description: "Pathfinder"}
+	railrunner    = &models.Membership{Name: "Railrunner", Description: "Railrunner"}
+	groundbreaker = &models.Membership{Name: "Groundbreaker", Description: "Groundbreaker"}
+	trailblazer   = &models.Membership{Name: "Trailblazer", Description: "Trailblazer"}
+	bridgebuilder = &models.Membership{Name: "Bridgebuilder", Description: "Bridgebuilder"}
+
 	memberships = []struct {
 		community *models.Community
-		items     []models.Membership
+		items     []*models.Membership
 	}{
 		{
 			atlantaBeltLine,
-			[]models.Membership{
-				{Name: "Trekker", Description: "Trekker"},
-				{Name: "Explorer", Description: "Explorer"},
-				{Name: "Pathfinder", Description: "Pathfinder"},
-				{Name: "Railrunner", Description: "Railrunner"},
-				{Name: "Groundbreaker", Description: "Groundbreaker"},
-				{Name: "Trailblazer", Description: "Trailblazer"},
-				{Name: "Bridgebuilder", Description: "Bridgebuilder"},
-			},
+			[]*models.Membership{trekker, explorer, pathfinder, railrunner, groundbreaker, trailblazer, bridgebuilder},
 		},
+	}
+
+	patrons = []struct {
+		membership *models.Membership
+		models.Account
+	}{
+		{trekker, models.Account{Email: "josheppinette@josheppinette.com"}},
+		{trekker, models.Account{Email: "blanchardsawyer@comveyer.com"}},
+		{trekker, models.Account{Email: "dotsoncraig@comveyer.com"}},
+		{trekker, models.Account{Email: "kayesanford@comveyer.com"}},
+		{trekker, models.Account{Email: "glovertucker@comveyer.com"}},
+		{trekker, models.Account{Email: "blackenglish@comveyer.com"}},
+		{trekker, models.Account{Email: "gabriellenorton@comveyer.com"}},
+		{trekker, models.Account{Email: "edwinavaldez@comveyer.com"}},
+		{trekker, models.Account{Email: "holdencoffey@comveyer.com"}},
+		{trekker, models.Account{Email: "bauercurtis@comveyer.com"}},
+		{trekker, models.Account{Email: "dalemoran@comveyer.com"}},
+		{trekker, models.Account{Email: "maureennoel@comveyer.com"}},
+		{trekker, models.Account{Email: "cobbmarsh@comveyer.com"}},
+		{trekker, models.Account{Email: "serenajones@comveyer.com"}},
+		{trekker, models.Account{Email: "clementsfaulkner@comveyer.com"}},
+		{trekker, models.Account{Email: "hendricksshepherd@comveyer.com"}},
+		{trekker, models.Account{Email: "montoyadrake@comveyer.com"}},
+		{trekker, models.Account{Email: "steelecastaneda@comveyer.com"}},
+		{trekker, models.Account{Email: "saundershicks@comveyer.com"}},
+		{trekker, models.Account{Email: "contrerasdejesus@comveyer.com"}},
+		{trekker, models.Account{Email: "riddlekemp@comveyer.com"}},
+		{trekker, models.Account{Email: "conradlawson@comveyer.com"}},
+		{trekker, models.Account{Email: "howemcgee@comveyer.com"}},
+		{trekker, models.Account{Email: "paulamartin@comveyer.com"}},
+		{trekker, models.Account{Email: "mullenmoses@comveyer.com"}},
+		{trekker, models.Account{Email: "jacobsjennings@comveyer.com"}},
+		{trekker, models.Account{Email: "olsenpratt@comveyer.com"}},
+		{trekker, models.Account{Email: "halemyers@comveyer.com"}},
+		{trekker, models.Account{Email: "amelialindsey@comveyer.com"}},
+		{trekker, models.Account{Email: "eulamills@comveyer.com"}},
+		{trekker, models.Account{Email: "adrianhowe@comveyer.com"}},
+		{trekker, models.Account{Email: "chasitybuchanan@comveyer.com"}},
+		{trekker, models.Account{Email: "adasimpson@comveyer.com"}},
+		{trekker, models.Account{Email: "tashaphelps@comveyer.com"}},
+		{trekker, models.Account{Email: "hollieoliver@comveyer.com"}},
+		{trekker, models.Account{Email: "warnerwoodard@comveyer.com"}},
+		{trekker, models.Account{Email: "simonwall@comveyer.com"}},
+		{trekker, models.Account{Email: "barkertaylor@comveyer.com"}},
+		{trekker, models.Account{Email: "kirbyhaney@comveyer.com"}},
+		{trekker, models.Account{Email: "minniepittman@comveyer.com"}},
+		{trekker, models.Account{Email: "annaparrish@comveyer.com"}},
+		{trekker, models.Account{Email: "hortonosborne@comveyer.com"}},
+		{trekker, models.Account{Email: "kelseybartlett@comveyer.com"}},
+		{trekker, models.Account{Email: "rowenaphillips@comveyer.com"}},
+		{trekker, models.Account{Email: "mamiemarquez@comveyer.com"}},
+		{trekker, models.Account{Email: "martinahuber@comveyer.com"}},
+		{trekker, models.Account{Email: "jordanrichardson@comveyer.com"}},
+		{trekker, models.Account{Email: "irmamcpherson@comveyer.com"}},
+		{trekker, models.Account{Email: "evangelinecalhoun@comveyer.com"}},
+		{trekker, models.Account{Email: "mitzieaton@comveyer.com"}},
 	}
 
 	geoJSONOverlays = []struct {
@@ -415,6 +471,15 @@ func Initialize(db *sqlx.DB, store *minio.Client, dir string) error {
 			if err := item.Save(membership.community.ID, db); err != nil {
 				return err
 			}
+		}
+	}
+
+	for _, patron := range patrons {
+		if err := patron.SetPassword(strings.Split(patron.Email, "@")[0]); err != nil {
+			return err
+		}
+		if err := patron.CreateWithMembership(patron.membership.ID, db); err != nil {
+			return err
 		}
 	}
 

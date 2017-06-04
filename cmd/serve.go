@@ -14,6 +14,7 @@ import (
 	"gitlab.com/peragrin/api/auth"
 	"gitlab.com/peragrin/api/communities"
 	"gitlab.com/peragrin/api/db"
+	"gitlab.com/peragrin/api/memberships"
 	"gitlab.com/peragrin/api/organizations"
 	"gitlab.com/peragrin/api/service"
 )
@@ -34,6 +35,7 @@ func serve() {
 	auth := auth.Init(dbClient, storeClient, viper.GetString("TOKEN_SECRET"), viper.GetString("LOCATIONIQ_API_KEY"))
 	organizations := organizations.Init(dbClient)
 	communities := communities.Init(dbClient, storeClient)
+	memberships := memberships.Init(dbClient)
 
 	r := mux.NewRouter()
 	r.Handle("/auth/login", service.Handler(auth.LoginHandler))
@@ -48,6 +50,8 @@ func serve() {
 	r.Handle("/communities/{communityID:[0-9]+}/geo-json-overlays", service.Handler(communities.ListGeoJSONOverlaysHandler))
 	r.Handle("/communities/{communityID:[0-9]+}/memberships", service.Handler(communities.ListMembershipsHandler)).Methods(http.MethodGet)
 	r.Handle("/communities/{communityID:[0-9]+}/memberships", service.Handler(communities.CreateMembershipHandler)).Methods(http.MethodPost)
+
+	r.Handle("/memberships/{membershipID:[0-9]+}/accounts", auth.RequiredMiddleware(memberships.ListAccountsHandler))
 
 	r.Handle("/organizations/{organizationID:[0-9]+}", auth.RequiredMiddleware(organizations.UpdateHandler)).Methods(http.MethodPost)
 	r.Handle("/organizations/{organizationID:[0-9]+}/communities", auth.RequiredMiddleware(organizations.ListCommunitiesHandler)).Methods(http.MethodGet)

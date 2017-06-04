@@ -40,6 +40,35 @@ func (a *Account) Save(client *sqlx.DB) error {
 	return client.Get(a, "INSERT INTO Account (email, password) VALUES ($1, $2) RETURNING *;", a.Email, a.Password)
 }
 
+// CreateWithMembership creates a new account with a connection to the
+// provided membership.
+func (a *Account) CreateWithMembership(membershipID int, client *sqlx.DB) error {
+	tx, err := client.Beginx()
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+			return
+		}
+		tx.Commit()
+	}()
+
+	err = tx.Get(a, "INSERT INTO Account (email, password) VALUES ($1, $2) RETURNING *;", a.Email, a.Password)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec("INSERT INTO AccountMembership (accountID, membershipID) VALUES ($1, $2) RETURNING *;", a.ID, membershipID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // GetAccountByEmail returns the account in the database that matches the provided
 // email address. If there is not matching account, then an error is returned.
 func GetAccountByEmail(email string, client *sqlx.DB) (*Account, error) {
@@ -48,4 +77,17 @@ func GetAccountByEmail(email string, client *sqlx.DB) (*Account, error) {
 		return nil, err
 	}
 	return a, nil
+}
+
+// GetAccountsByMembership returns all accounts with the provided membership.
+func GetAccountsByMembership(membershipID int, client *sqlx.DB) (Accounts, error) {
+	accounts := Accounts{}
+	if err := client.Select(&accounts, `
+		SELECT Account.email, Account.id
+		FROM Account INNER JOIN AccountMembership ON (Account.id = AccountMembership.accountID)
+		WHERE AccountMembership.membershipID = $1
+	`, membershipID); err != nil {
+		return nil, err
+	}
+	return accounts, nil
 }

@@ -38,6 +38,24 @@ var (
 		Zoom: 12,
 	}
 
+	memberships = []struct {
+		community *models.Community
+		items     []models.Membership
+	}{
+		{
+			atlantaBeltLine,
+			[]models.Membership{
+				{Name: "Trekker", Description: "Trekker"},
+				{Name: "Explorer", Description: "Explorer"},
+				{Name: "Pathfinder", Description: "Pathfinder"},
+				{Name: "Railrunner", Description: "Railrunner"},
+				{Name: "Groundbreaker", Description: "Groundbreaker"},
+				{Name: "Trailblazer", Description: "Trailblazer"},
+				{Name: "Bridgebuilder", Description: "Bridgebuilder"},
+			},
+		},
+	}
+
 	geoJSONOverlays = []struct {
 		community *models.Community
 		models.GeoJSONOverlay
@@ -216,7 +234,7 @@ var (
 		{gYeremian, gsMidtown},
 	}
 
-	memberships = []struct {
+	members = []struct {
 		community       *models.Community
 		organization    *models.Organization
 		isAdministrator bool
@@ -301,12 +319,17 @@ func Initialize(db *sqlx.DB, store *minio.Client, dir string) error {
 	}
 
 	if _, err := db.Exec(`
-			DELETE FROM Community;
-			DELETE FROM Organization;
 			DELETE FROM Account;
+			DELETE FROM Organization;
+			DELETE FROM Hours;
+			DELETE FROM Promotion;
+			DELETE FROM Community;
+			DELETE FROM GeoJSONOverlay;
 			DELETE FROM Post;
-			DELETE FROM CommunityOrganization;
 			DELETE FROM AccountOrganization;
+			DELETE FROM CommunityOrganization;
+			DELETE FROM Membership;
+			DELETE FROM AccountMembership;
 	`); err != nil {
 		return err
 	}
@@ -341,23 +364,23 @@ func Initialize(db *sqlx.DB, store *minio.Client, dir string) error {
 		}
 	}
 
-	for _, membership := range memberships {
-		if membership.isAdministrator {
-			if err := membership.community.Create(membership.organization.ID, db); err != nil {
+	for _, member := range members {
+		if member.isAdministrator {
+			if err := member.community.Create(member.organization.ID, db); err != nil {
 				return err
 			}
-			if icon := membership.organization.Icon; icon != "" {
+			if icon := member.organization.Icon; icon != "" {
 				file, err := os.Open(path.Join(dir, "icons", icon))
 				if err != nil {
 					return err
 				}
 				defer file.Close()
-				if err := membership.organization.UploadIcon(file, store); err != nil {
+				if err := member.organization.UploadIcon(file, store); err != nil {
 					return err
 				}
 			}
 		} else {
-			co := models.CommunityOrganization{CommunityID: membership.community.ID, OrganizationID: membership.organization.ID}
+			co := models.CommunityOrganization{CommunityID: member.community.ID, OrganizationID: member.organization.ID}
 			if err := co.Create(db); err != nil {
 				return err
 			}
@@ -382,6 +405,14 @@ func Initialize(db *sqlx.DB, store *minio.Client, dir string) error {
 		for _, item := range promotion.items {
 			item.OrganizationID = promotion.organization.ID
 			if err := item.Save(db); err != nil {
+				return err
+			}
+		}
+	}
+
+	for _, membership := range memberships {
+		for _, item := range membership.items {
+			if err := item.Save(membership.community.ID, db); err != nil {
 				return err
 			}
 		}

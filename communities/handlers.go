@@ -1,6 +1,7 @@
 package communities
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
 
@@ -42,6 +43,40 @@ func (c *Config) ListOrganizationsHandler(r *http.Request) *service.Response {
 	}
 
 	return service.NewResponse(nil, http.StatusOK, organizations)
+}
+
+// ListMembershipsHandler returns a response with all memberships
+// in a given community.
+func (c *Config) ListMembershipsHandler(r *http.Request) *service.Response {
+	communityID, err := strconv.Atoi(mux.Vars(r)["communityID"])
+	if err != nil {
+		return service.NewResponse(errors.Wrap(err, errCommunityIDRequired.Error()), http.StatusBadRequest, nil)
+	}
+
+	memberships, err := models.GetMembershipsByCommunity(communityID, c.DBClient)
+	if err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+
+	return service.NewResponse(nil, http.StatusOK, memberships)
+}
+
+// CreateMembershipHandler saves a new membership to the database.
+func (c *Config) CreateMembershipHandler(r *http.Request) *service.Response {
+	membership := models.Membership{}
+	if err := json.NewDecoder(r.Body).Decode(&membership); err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+
+	communityID, err := strconv.Atoi(mux.Vars(r)["communityID"])
+	if err != nil {
+		return service.NewResponse(errors.Wrap(err, errCommunityIDRequired.Error()), http.StatusBadRequest, nil)
+	}
+
+	if err := membership.Save(communityID, c.DBClient); err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+	return service.NewResponse(nil, http.StatusCreated, membership)
 }
 
 // ListGeoJSONOverlaysHandler returns a response with all geo JSON overlays

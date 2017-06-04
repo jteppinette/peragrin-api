@@ -83,6 +83,18 @@ func Migrate(client *sqlx.DB) error {
 			isAdministrator bool,
 			PRIMARY KEY (organizationID, communityID)
 		);
+
+		CREATE TABLE IF NOT EXISTS Membership (
+			id			SERIAL PRIMARY KEY,
+			communityID int REFERENCES Community ON DELETE CASCADE,
+			name		varchar(30),
+			description text
+		);
+
+		CREATE TABLE IF NOT EXISTS AccountMembership (
+			accountID		int REFERENCES Account ON DELETE CASCADE,
+			membershipID	int REFERENCES Membership ON DELETE CASCADE
+		);
 	`
 	if _, err := client.Exec(schema); err != nil {
 		return err

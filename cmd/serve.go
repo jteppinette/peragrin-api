@@ -42,7 +42,8 @@ func serve() {
 	r := mux.NewRouter()
 	r.Handle("/auth/login", service.Handler(auth.LoginHandler))
 	r.Handle("/auth/register", service.Handler(auth.RegisterHandler))
-	r.Handle("/auth/account", auth.RequiredMiddleware(auth.GetAccountHandler))
+	r.Handle("/auth/account", auth.RequiredMiddleware(auth.GetAccountHandler)).Methods(http.MethodGet)
+	r.Handle("/auth/account", auth.RequiredMiddleware(auth.UpdateAccountHandler)).Methods(http.MethodPost)
 	r.Handle("/auth/organizations", auth.RequiredMiddleware(auth.ListOrganizationsHandler)).Methods(http.MethodGet)
 	r.Handle("/auth/organizations", auth.RequiredMiddleware(auth.CreateOrganizationHandler)).Methods(http.MethodPost)
 

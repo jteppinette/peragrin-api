@@ -22,6 +22,33 @@ func (c *Config) GetAccountHandler(r *http.Request) *service.Response {
 	return service.NewResponse(errAuthenticationRequired, http.StatusUnauthorized, nil)
 }
 
+// UpdateAccountHandler updates the email and password for an account.
+func (c *Config) UpdateAccountHandler(r *http.Request) *service.Response {
+	creds := Credentials{}
+	if err := json.NewDecoder(r.Body).Decode(&creds); err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+
+	account, ok := context.Get(r, "account").(models.Account)
+	if !ok {
+		return service.NewResponse(errAuthenticationRequired, http.StatusUnauthorized, nil)
+	}
+
+	if creds.Email != "" {
+		account.Email = creds.Email
+	}
+
+	if creds.Password != "" {
+		account.SetPassword(creds.Password)
+	}
+
+	if err := account.Save(c.DBClient); err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+
+	return service.NewResponse(nil, http.StatusOK, account)
+}
+
 // ListOrganizationsHandler generates a response object containing the organizations that are
 // operated by the currently authenticated account.
 func (c *Config) ListOrganizationsHandler(r *http.Request) *service.Response {

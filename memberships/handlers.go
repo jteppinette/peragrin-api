@@ -1,12 +1,14 @@
 package memberships
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
 
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 
+	"gitlab.com/peragrin/api/auth"
 	"gitlab.com/peragrin/api/models"
 	"gitlab.com/peragrin/api/service"
 )
@@ -24,4 +26,26 @@ func (c *Config) ListAccountsHandler(r *http.Request) *service.Response {
 		return service.NewResponse(err, http.StatusBadRequest, nil)
 	}
 	return service.NewResponse(nil, http.StatusOK, accounts)
+}
+
+// CreateAccountHandler creates a new account and connects it to the
+// provided membership.
+func (c *Config) CreateAccountHandler(r *http.Request) *service.Response {
+	creds := auth.Credentials{}
+	if err := json.NewDecoder(r.Body).Decode(&creds); err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+
+	membershipID, err := strconv.Atoi(mux.Vars(r)["membershipID"])
+	if err != nil {
+		return service.NewResponse(errors.Wrap(err, errMembershipIDRequired.Error()), http.StatusBadRequest, nil)
+	}
+
+	account := &models.Account{Email: creds.Email}
+	account.SetPassword(creds.Password)
+	if err := account.CreateWithMembership(membershipID, c.Client); err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+
+	return service.NewResponse(nil, http.StatusOK, account)
 }

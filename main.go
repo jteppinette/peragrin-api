@@ -73,8 +73,6 @@ func main() {
 	viper.BindPFlag("LOG_LEVEL", root.PersistentFlags().Lookup("log-level"))
 
 	root.AddCommand(cmd.Migrate)
-	root.AddCommand(cmd.CreateFixtureData)
-	root.AddCommand(cmd.LoadABP)
 	root.AddCommand(cmd.Serve)
 
 	if err := root.Execute(); err != nil {

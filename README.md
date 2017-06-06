@@ -15,11 +15,9 @@
 
 3. `cd $GOPATH/src/gitlab.com/peragrin/api`
 
-4. `go run main.go migrate`
+4. `go run main.go migrate -m <migrations-directory>`
 
-5. `go run main.go createfixturedata`
-
-6. `curl -u jteppinette:jteppinette localhost:8000/account`
+5. `go run main.go serve`
 
 ## Usage
 
@@ -61,6 +59,19 @@ Any variables marked as `insecure: true` should be overriden before being added 
       --name app
       app`
 
-4. `docker exec -it app api migrate`
+4. `docker exec -it app api migrate -m <migrations-directory>`
 
-5. `docker exec -it app api createfixturedata`
+## Restore From Backups
+
+### DB
+
+```
+cat <backup-filepath> | docker exec -i `docker ps --filter name=db -q` psql -U postgres db
+```
+
+### Store
+
+```
+docker cp <backup-filepath> `docker ps --filter name=minio -q`:/etc/backup.sql
+docker exec -it `docker ps --filter name=minio -q` tar xfv /etc/backup.sql -C /data
+```

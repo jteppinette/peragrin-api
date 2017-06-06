@@ -1,11 +1,19 @@
 package cmd
 
 import (
+	"fmt"
+
 	log "github.com/Sirupsen/logrus"
+	mattes "github.com/mattes/migrate"
+	"github.com/mattes/migrate/database/postgres"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
 	"gitlab.com/peragrin/api/db"
+
+	// This import register the file source driver for mattes/migrate.
+	_ "github.com/mattes/migrate/source/file"
 )
 
 func migrate() {
@@ -15,9 +23,20 @@ func migrate() {
 	}
 
 	log.Info("initializing migration")
-	if err := db.Migrate(client); err != nil {
-		log.Fatal(err)
+
+	driver, err := postgres.WithInstance(client.DB, &postgres.Config{})
+	if err != nil {
+		log.Fatal(errors.Wrap(err, "create driver"))
 	}
+	m, err := mattes.NewWithDatabaseInstance(fmt.Sprintf("file://%s", viper.GetString("MIGRATIONS_DIRECTORY")), "postgres", driver)
+	if err != nil {
+		log.Fatal(errors.Wrap(err, "initialize migration instance"))
+	}
+
+	if err := m.Up(); err != nil {
+		log.Fatal(errors.Wrap(err, "migrate"))
+	}
+
 	log.Info("completed successfully")
 }
 
@@ -31,4 +50,7 @@ func init() {
 			migrate()
 		},
 	}
+
+	Migrate.PersistentFlags().StringP("migrations-directory", "m", "", "absolute path to migrations directory")
+	viper.BindPFlag("MIGRATIONS_DIRECTORY", Migrate.PersistentFlags().Lookup("migrations-directory"))
 }

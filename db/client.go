@@ -2,6 +2,7 @@ package db
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
@@ -20,5 +21,6 @@ func Client(host, user, password, dbname string) (*sqlx.DB, error) {
 	if err != nil {
 		return nil, err
 	}
+	client.SetConnMaxLifetime(time.Minute * 1)
 	return client, nil
 }

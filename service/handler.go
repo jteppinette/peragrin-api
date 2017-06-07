@@ -59,6 +59,7 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	fields := log.Fields{
 		"code":     code,
 		"method":   r.Method,
+		"id":       r.Header.Get("X-Request-ID"),
 		"delta-ns": time.Now().Sub(start).Nanoseconds(),
 	}
 	if r.URL != nil {

@@ -6,4 +6,6 @@ import (
 
 var (
 	errMembershipIDRequired = errors.New("membership id required")
+
+	errAccountCreationFailed = errors.New("account creation failed")
 )

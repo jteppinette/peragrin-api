@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 
@@ -44,7 +45,10 @@ func (c *Config) CreateAccountHandler(r *http.Request) *service.Response {
 	account := &models.Account{Email: creds.Email}
 	account.SetPassword(creds.Password)
 	if err := account.CreateWithMembership(membershipID, c.Client); err != nil {
-		return service.NewResponse(err, http.StatusBadRequest, nil)
+		log.WithFields(log.Fields{
+			"email": creds.Email, "error": err.Error(), "membershipID": membershipID, "id": r.Header.Get("X-Request-ID"),
+		}).Info(errAccountCreationFailed.Error())
+		return service.NewResponse(errAccountCreationFailed, http.StatusBadRequest, map[string]string{"msg": errAccountCreationFailed.Error()})
 	}
 
 	return service.NewResponse(nil, http.StatusOK, account)

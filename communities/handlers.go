@@ -2,7 +2,6 @@ package communities
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -15,45 +14,34 @@ import (
 
 // ListHandler returns a response with all communities.
 func (c *Config) ListHandler(r *http.Request) *service.Response {
-	debug(r, "initialize: ListHandler")
-
 	communities, err := models.GetCommunities(c.DBClient)
 	if err != nil {
-		debug(r, "error: ListHandler")
 		return service.NewResponse(err, http.StatusBadRequest, nil)
 	}
 
-	debug(r, "return: ListHandler")
 	return service.NewResponse(nil, http.StatusOK, communities)
 }
 
 // ListOrganizationsHandler returns a response with all organizations
 // in a given community.
 func (c *Config) ListOrganizationsHandler(r *http.Request) *service.Response {
-	debug(r, "initialize: ListHandler")
-
 	communityID, err := strconv.Atoi(mux.Vars(r)["communityID"])
 	if err != nil {
-		debug(r, fmt.Sprintf("error: ListOrganizationsHandler: %s", err.Error()))
 		return service.NewResponse(errors.Wrap(err, errCommunityIDRequired.Error()), http.StatusBadRequest, nil)
 	}
 
 	organizations, err := models.GetOrganizationsByCommunity(communityID, c.DBClient)
 	if err != nil {
-		debug(r, fmt.Sprintf("error: ListOrganizationsHandler: %s", err.Error()))
 		return service.NewResponse(err, http.StatusBadRequest, nil)
 	}
 
 	if err := organizations.SetPresignedLogoLinks(c.StoreClient); err != nil {
-		debug(r, fmt.Sprintf("error: ListOrganizationsHandler: %s", err.Error()))
 		return service.NewResponse(err, http.StatusBadRequest, nil)
 	}
 	if err := organizations.SetPresignedIconLinks(c.StoreClient); err != nil {
-		debug(r, fmt.Sprintf("error: ListOrganizationsHandler: %s", err.Error()))
 		return service.NewResponse(err, http.StatusBadRequest, nil)
 	}
 
-	debug(r, "return: ListOrganizationsHandler")
 	return service.NewResponse(nil, http.StatusOK, organizations)
 }
 

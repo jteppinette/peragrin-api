@@ -44,11 +44,11 @@ func TestLoginHandler(t *testing.T) {
 		},
 		{
 			[]byte(`{"email": "jte@jte.com", "password": "bob"}`),
-			service.Response{errInvalidCredentials, http.StatusUnauthorized, nil},
+			service.Response{errInvalidCredentials, http.StatusUnauthorized, map[string]string{"msg": errInvalidCredentials.Error()}},
 		},
 		{
 			[]byte(`{"email": "unknown@unknown.com", "password": "bob"}`),
-			service.Response{errAccountNotFound, http.StatusUnauthorized, nil},
+			service.Response{errAccountNotFound, http.StatusUnauthorized, map[string]string{"msg": errAccountNotFound.Error()}},
 		},
 		{
 			[]byte(``),
@@ -66,7 +66,7 @@ func TestLoginHandler(t *testing.T) {
 		unmarshalErr := json.Unmarshal(test.bytes, &creds)
 
 		if unmarshalErr == nil {
-			expected := mock.ExpectQuery("^SELECT (.+) FROM Account WHERE email = (.+);").WithArgs(creds.Email)
+			expected := mock.ExpectQuery("^SELECT (.+) FROM Account WHERE LOWER\\(email\\) = (.+);").WithArgs(creds.Email)
 			if creds.Email == dbAccount.Email {
 				expected.WillReturnRows(sqlmock.NewRows([]string{"id", "email", "password"}).AddRow(dbAccount.ID, dbAccount.Email, dbAccount.Password))
 			}
@@ -135,7 +135,7 @@ func TestRequiredMiddleware(t *testing.T) {
 
 		var expected *sqlmock.ExpectedQuery
 		if email, _, ok := parseBasicAuth(test.header.Get("Authorization")); ok {
-			expected = mock.ExpectQuery("^SELECT (.+) FROM Account WHERE email = (.+);").WithArgs(email)
+			expected = mock.ExpectQuery("^SELECT (.+) FROM Account WHERE LOWER\\(email\\) = (.+);").WithArgs(email)
 			expected.WillReturnRows(sqlmock.NewRows([]string{"id", "email", "password"}).AddRow(dbAccount.ID, dbAccount.Email, dbAccount.Password))
 		}
 

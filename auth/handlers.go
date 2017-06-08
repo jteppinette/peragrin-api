@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/Sirupsen/logrus"
+	log "github.com/Sirupsen/logrus"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/context"
 	"github.com/pkg/errors"
@@ -90,7 +90,7 @@ func (c *Config) CreateOrganizationHandler(r *http.Request) *service.Response {
 	// If there is a geocode lookup failure, then log the failure. We
 	// will just let the user manually enter the coordinates.
 	if err := organization.SetGeo(c.LocationIQAPIKey); err != nil {
-		logrus.WithFields(logrus.Fields{
+		log.WithFields(log.Fields{
 			"street":  organization.Street,
 			"city":    organization.City,
 			"state":   organization.State,
@@ -114,14 +114,14 @@ func (c *Config) LoginHandler(r *http.Request) *service.Response {
 		return service.NewResponse(errors.Wrap(err, errBadCredentialsFormat.Error()), http.StatusBadRequest, nil)
 	}
 
-	account, err := creds.Authenticate(c)
+	account, err := creds.Authenticate(c, r.Header.Get("X-Request-ID"))
 	if err != nil {
-		return service.NewResponse(err, http.StatusUnauthorized, nil)
+		return service.NewResponse(err, http.StatusUnauthorized, map[string]string{"msg": err.Error()})
 	}
 
 	str, err := token(c.TokenSecret, account, c.Clock)
 	if err != nil {
-		return service.NewResponse(err, http.StatusUnauthorized, nil)
+		return service.NewResponse(err, http.StatusUnauthorized, map[string]string{"msg": err.Error()})
 	}
 
 	return service.NewResponse(nil, http.StatusOK, struct {
@@ -139,7 +139,10 @@ func (c *Config) RegisterHandler(r *http.Request) *service.Response {
 	a := models.Account{Email: creds.Email}
 	a.SetPassword(creds.Password)
 	if err := a.Save(c.DBClient); err != nil {
-		return service.NewResponse(errors.Wrap(err, errRegistrationFailed.Error()), http.StatusBadRequest, nil)
+		log.WithFields(log.Fields{
+			"email": creds.Email, "error": err.Error(), "id": r.Header.Get("X-Request-ID"),
+		}).Info(errRegistrationFailed.Error())
+		return service.NewResponse(errRegistrationFailed, http.StatusBadRequest, map[string]string{"msg": errRegistrationFailed.Error()})
 	}
 
 	str, err := token(c.TokenSecret, a, c.Clock)
@@ -178,7 +181,7 @@ func (c *Config) RequiredMiddleware(h service.Handler) service.Handler {
 				return service.NewResponse(errors.Wrap(errBadCredentialsFormat, errBasicAuth.Error()), http.StatusBadRequest, nil)
 			}
 			var err error
-			account, err = Credentials{email, password}.Authenticate(c)
+			account, err = Credentials{email, password}.Authenticate(c, r.Header.Get("X-Request-ID"))
 			if err != nil {
 				return service.NewResponse(errors.Wrap(err, errBasicAuth.Error()), http.StatusUnauthorized, nil)
 			}

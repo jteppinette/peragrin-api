@@ -1,8 +1,6 @@
 package auth
 
-import (
-	"errors"
-)
+import "errors"
 
 var (
 	errBadCredentialsFormat               = errors.New("bad credentials format")

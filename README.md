@@ -72,6 +72,6 @@ cat <backup-filepath> | docker exec -i `docker ps --filter name=db -q` psql -U p
 ### Store
 
 ```
-docker cp <backup-filepath> `docker ps --filter name=minio -q`:/etc/backup.sql
-docker exec -it `docker ps --filter name=minio -q` tar xfv /etc/backup.sql -C /data
+docker cp <backup-filepath> `docker ps --filter name=minio -q`:/etc/backup.tar.gz
+docker exec -it `docker ps --filter name=minio -q` tar xfv /etc/backup.tar.gz -C /data
 ```

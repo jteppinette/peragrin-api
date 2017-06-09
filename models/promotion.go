@@ -17,14 +17,15 @@ type Promotion struct {
 	Exclusions     string              `json:"exclusions"`
 	Expiration     common.JSONNullTime `json:"expiration"`
 	IsSingleUse    bool                `json:"isSingleUse"`
+	MembershipID   *int                `json:"membershipID,omitempty"`
 }
 
 // Save creates or updates a promotion in the database based on the existence of an id.
 func (p *Promotion) Save(client *sqlx.DB) error {
 	if p.ID != 0 {
-		return client.Get(p, "UPDATE Promotion SET name = $2, description = $3, exclusions = $4, expiration = $5, isSingleUse = $6 WHERE id = $1 RETURNING *;", p.ID, p.Name, p.Description, p.Exclusions, p.Expiration, p.IsSingleUse)
+		return client.Get(p, "UPDATE Promotion SET name = $2, description = $3, exclusions = $4, expiration = $5, isSingleUse = $6, membershipID = $7 WHERE id = $1 RETURNING *;", p.ID, p.Name, p.Description, p.Exclusions, p.Expiration, p.IsSingleUse, p.MembershipID)
 	}
-	return client.Get(p, "INSERT INTO Promotion (organizationID, name, description, exclusions, expiration, isSingleUse) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *;", p.OrganizationID, p.Name, p.Description, p.Exclusions, p.Expiration, p.IsSingleUse)
+	return client.Get(p, "INSERT INTO Promotion (organizationID, name, description, exclusions, expiration, isSingleUse, membershipID) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *;", p.OrganizationID, p.Name, p.Description, p.Exclusions, p.Expiration, p.IsSingleUse, p.MembershipID)
 }
 
 // GetPromotionsByOrganization returns all promotions for a given organization.

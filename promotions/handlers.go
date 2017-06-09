@@ -26,6 +26,16 @@ func (c *Config) RedeemHandler(r *http.Request) *service.Response {
 	}
 
 	redemption := &models.AccountPromotion{AccountID: account.ID, PromotionID: promotionID}
+
+	// Does this account have the necessary membership level to redeem this promotion?
+	ok, err = redemption.HasPermission(c.Client)
+	if err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+	if !ok {
+		return service.NewResponse(errPromotionMembershipRequirementNotMet, http.StatusForbidden, map[string]string{"msg": errPromotionMembershipRequirementNotMet.Error()})
+	}
+
 	if err := redemption.Create(c.Client); err != nil {
 		return service.NewResponse(err, http.StatusBadRequest, nil)
 	}

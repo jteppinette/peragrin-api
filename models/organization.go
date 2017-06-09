@@ -32,6 +32,9 @@ type Organization struct {
 	// Logo is used to send the presigned Logo file link to the client.
 	Logo string `json:"logo"`
 
+	// Hours is only set during organization creation.
+	Hours []Hour `json:"hours,omitempty"`
+
 	// IsAdministrator is only populated when this organization
 	// is in the context of a community.
 	IsAdministrator *bool `json:"isAdministrator,omitempty"`
@@ -85,20 +88,50 @@ func (organizations Organizations) SetPresignedLogoLinks(client *minio.Client) e
 	return nil
 }
 
-// Create persists a new organization in the database and creates the
+// Create persists a new organization with hours in the database and creates the
 // account - organization relationship.
 func (o *Organization) Create(accountID int, client *sqlx.DB) error {
-	if err := client.Get(o, `
+	tx, err := client.Beginx()
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+			return
+		}
+		tx.Commit()
+	}()
+
+	if err := tx.Get(o, `
 		INSERT INTO Organization (name, street, city, state, country, zip, lon, lat, email, phone, website, category)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 		RETURNING *;
 	`, o.Name, o.Street, o.City, o.State, o.Country, o.Zip, o.Lon, o.Lat, o.Email, o.Phone, o.Website, o.Category); err != nil {
 		return err
 	}
-	ao := AccountOrganization{AccountID: accountID, OrganizationID: o.ID}
-	if err := ao.Create(client); err != nil {
+
+	statement := "INSERT INTO Hours (organizationID, weekday, start, close) VALUES "
+	args := make([]interface{}, len(o.Hours)*4)
+	for i, v := range o.Hours {
+		statement = statement + "(?, ?, ?, ?),"
+		set := i * 4
+		args[set+0] = o.ID
+		args[set+1] = v.Weekday
+		args[set+2] = v.Start
+		args[set+3] = v.Close
+	}
+	_, err = tx.Exec(client.Rebind(statement[0:len(statement)-1]), args...)
+	if err != nil {
 		return err
 	}
+
+	_, err = tx.Exec("INSERT INTO AccountOrganization (accountID, organizationID) VALUES ($1, $2);", accountID, o.ID)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

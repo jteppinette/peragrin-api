@@ -32,9 +32,6 @@ type Organization struct {
 	// Logo is used to send the presigned Logo file link to the client.
 	Logo string `json:"logo"`
 
-	// Icon is used to send the presigned Icon file link to the client.
-	Icon string `json:"icon"`
-
 	// IsAdministrator is only populated when this organization
 	// is in the context of a community.
 	IsAdministrator *bool `json:"isAdministrator,omitempty"`
@@ -81,46 +78,6 @@ func (o *Organization) SetPresignedLogoLink(client *minio.Client) error {
 func (organizations Organizations) SetPresignedLogoLinks(client *minio.Client) error {
 	for i, o := range organizations {
 		if err := o.SetPresignedLogoLink(client); err != nil {
-			return err
-		}
-		organizations[i] = o
-	}
-	return nil
-}
-
-// UploadIcon puts a new object in the static store.
-func (o *Organization) UploadIcon(reader io.Reader, client *minio.Client) error {
-	_, err := client.PutObject(bucket, fmt.Sprintf("icons/%s", strconv.Itoa(o.ID)), reader, "application/octet-stream")
-	return err
-}
-
-// SetPresignedIconLink sets the Icon field with a presigned get request url.
-func (o *Organization) SetPresignedIconLink(client *minio.Client) error {
-	object := fmt.Sprintf("icons/%s", strconv.Itoa(o.ID))
-
-	// If this object does not exist, then do not set the presigned link.
-	// TODO: Store a reference to the object in the database to determine existence.
-	_, err := client.StatObject(bucket, object)
-	if err != nil {
-		return nil
-	}
-
-	url, err := client.PresignedGetObject(bucket, object, time.Second*24*60*60, nil)
-	if err != nil {
-		return err
-	}
-	o.Icon = url.String()
-	return nil
-}
-
-// SetPresignedIconLinks sets the Icon field with a presgned get request url for each organization provided.
-// Only administrators have custom icons.
-func (organizations Organizations) SetPresignedIconLinks(client *minio.Client) error {
-	for i, o := range organizations {
-		if o.IsAdministrator == nil {
-			continue
-		}
-		if err := o.SetPresignedIconLink(client); err != nil {
 			return err
 		}
 		organizations[i] = o

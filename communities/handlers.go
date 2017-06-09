@@ -38,9 +38,6 @@ func (c *Config) ListOrganizationsHandler(r *http.Request) *service.Response {
 	if err := organizations.SetPresignedLogoLinks(c.StoreClient); err != nil {
 		return service.NewResponse(err, http.StatusBadRequest, nil)
 	}
-	if err := organizations.SetPresignedIconLinks(c.StoreClient); err != nil {
-		return service.NewResponse(err, http.StatusBadRequest, nil)
-	}
 
 	return service.NewResponse(nil, http.StatusOK, organizations)
 }

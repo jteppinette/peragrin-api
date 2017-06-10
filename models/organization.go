@@ -148,6 +148,15 @@ func (o *Organization) Update(client *sqlx.DB) error {
 	return nil
 }
 
+// GetOrganizationByID returns the requested organization.
+func GetOrganizationByID(id int, client *sqlx.DB) (Organization, error) {
+	organization := Organization{}
+	if err := client.Get(&organization, "SELECT * FROM Organization WHERE id = $1;", id); err != nil {
+		return organization, err
+	}
+	return organization, nil
+}
+
 // GetOrganizationsByCommunity returns all organizations that are a member of the given community.
 func GetOrganizationsByCommunity(communityID int, client *sqlx.DB) (Organizations, error) {
 	organizations := Organizations{}

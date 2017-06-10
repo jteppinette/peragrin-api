@@ -34,7 +34,7 @@ func serve() {
 	}
 
 	auth := auth.Init(dbClient, storeClient, viper.GetString("TOKEN_SECRET"), viper.GetString("LOCATIONIQ_API_KEY"))
-	organizations := organizations.Init(dbClient)
+	organizations := organizations.Init(dbClient, storeClient)
 	communities := communities.Init(dbClient, storeClient)
 	memberships := memberships.Init(dbClient)
 	promotions := promotions.Init(dbClient)
@@ -58,6 +58,7 @@ func serve() {
 	r.Handle("/memberships/{membershipID:[0-9]+}/accounts", auth.RequiredMiddleware(memberships.CreateAccountHandler)).Methods(http.MethodPost)
 
 	r.Handle("/organizations/{organizationID:[0-9]+}", auth.RequiredMiddleware(organizations.UpdateHandler)).Methods(http.MethodPost)
+	r.Handle("/organizations/{organizationID:[0-9]+}", auth.RequiredMiddleware(organizations.GetHandler)).Methods(http.MethodGet)
 	r.Handle("/organizations/{organizationID:[0-9]+}/communities", auth.RequiredMiddleware(organizations.ListCommunitiesHandler)).Methods(http.MethodGet)
 	r.Handle("/organizations/{organizationID:[0-9]+}/communities", auth.RequiredMiddleware(organizations.CreateCommunityHandler)).Methods(http.MethodPost)
 	r.Handle("/organizations/{organizationID:[0-9]+}/communities/{communityID:[0-9]+}", auth.RequiredMiddleware(organizations.JoinCommunityHandler)).Methods(http.MethodPost)

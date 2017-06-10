@@ -25,9 +25,28 @@ func (c *Config) UpdateHandler(r *http.Request) *service.Response {
 	}
 	organization.ID = id
 
-	if err := organization.Update(c.Client); err != nil {
+	if err := organization.Update(c.DBClient); err != nil {
 		return service.NewResponse(err, http.StatusBadRequest, nil)
 	}
+	return service.NewResponse(nil, http.StatusOK, organization)
+}
+
+// GetHandler generates a response with the requested organization.
+func (c *Config) GetHandler(r *http.Request) *service.Response {
+	id, err := strconv.Atoi(mux.Vars(r)["organizationID"])
+	if err != nil {
+		return service.NewResponse(errors.Wrap(err, errOrganizationIDRequired.Error()), http.StatusBadRequest, nil)
+	}
+
+	organization, err := models.GetOrganizationByID(id, c.DBClient)
+	if err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+
+	if err := organization.SetPresignedLogoLink(c.StoreClient); err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+
 	return service.NewResponse(nil, http.StatusOK, organization)
 }
 
@@ -44,7 +63,7 @@ func (c *Config) CreatePostHandler(r *http.Request) *service.Response {
 	}
 
 	post.OrganizationID = organizationID
-	if err := post.Save(c.Client); err != nil {
+	if err := post.Save(c.DBClient); err != nil {
 		return service.NewResponse(err, http.StatusBadRequest, nil)
 	}
 	return service.NewResponse(nil, http.StatusCreated, post)
@@ -63,7 +82,7 @@ func (c *Config) CreatePromotionHandler(r *http.Request) *service.Response {
 	}
 
 	promotion.OrganizationID = organizationID
-	if err := promotion.Save(c.Client); err != nil {
+	if err := promotion.Save(c.DBClient); err != nil {
 		return service.NewResponse(err, http.StatusBadRequest, nil)
 	}
 	return service.NewResponse(nil, http.StatusCreated, promotion)
@@ -77,7 +96,7 @@ func (c *Config) ListCommunitiesHandler(r *http.Request) *service.Response {
 		return service.NewResponse(err, http.StatusBadRequest, nil)
 	}
 
-	communities, err := models.GetCommunitiesByOrganization(organizationID, c.Client)
+	communities, err := models.GetCommunitiesByOrganization(organizationID, c.DBClient)
 	if err != nil {
 		return service.NewResponse(err, http.StatusBadRequest, nil)
 	}
@@ -98,7 +117,7 @@ func (c *Config) JoinCommunityHandler(r *http.Request) *service.Response {
 	}
 
 	co := models.CommunityOrganization{CommunityID: communityID, OrganizationID: organizationID}
-	if co.Create(c.Client); err != nil {
+	if co.Create(c.DBClient); err != nil {
 		return service.NewResponse(err, http.StatusBadRequest, nil)
 	}
 	return service.NewResponse(nil, http.StatusOK, nil)
@@ -118,7 +137,7 @@ func (c *Config) CreateCommunityHandler(r *http.Request) *service.Response {
 		return service.NewResponse(err, http.StatusBadRequest, nil)
 	}
 
-	if err := community.Create(organizationID, c.Client); err != nil {
+	if err := community.Create(organizationID, c.DBClient); err != nil {
 		return service.NewResponse(err, http.StatusBadRequest, nil)
 	}
 	return service.NewResponse(nil, http.StatusCreated, community)
@@ -136,7 +155,7 @@ func (c *Config) SetHoursHandler(r *http.Request) *service.Response {
 		return service.NewResponse(err, http.StatusBadRequest, nil)
 	}
 
-	if err := hours.Set(organizationID, c.Client); err != nil {
+	if err := hours.Set(organizationID, c.DBClient); err != nil {
 		return service.NewResponse(err, http.StatusBadRequest, nil)
 	}
 	return service.NewResponse(nil, http.StatusOK, nil)
@@ -150,7 +169,7 @@ func (c *Config) ListHoursHandler(r *http.Request) *service.Response {
 		return service.NewResponse(errors.Wrap(err, errOrganizationIDRequired.Error()), http.StatusBadRequest, nil)
 	}
 
-	hours, err := models.GetHoursByOrganization(organizationID, c.Client)
+	hours, err := models.GetHoursByOrganization(organizationID, c.DBClient)
 	if err != nil {
 		return service.NewResponse(err, http.StatusBadRequest, nil)
 	}
@@ -166,7 +185,7 @@ func (c *Config) ListPromotionsHandler(r *http.Request) *service.Response {
 		return service.NewResponse(errors.Wrap(err, errOrganizationIDRequired.Error()), http.StatusBadRequest, nil)
 	}
 
-	promotions, err := models.GetPromotionsByOrganization(organizationID, c.Client)
+	promotions, err := models.GetPromotionsByOrganization(organizationID, c.DBClient)
 	if err != nil {
 		return service.NewResponse(err, http.StatusBadRequest, nil)
 	}

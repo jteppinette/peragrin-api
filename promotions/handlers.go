@@ -32,6 +32,19 @@ func (c *Config) UpdateHandler(r *http.Request) *service.Response {
 	return service.NewResponse(nil, http.StatusOK, promotion)
 }
 
+// DeleteHandler deletes a promotion.
+func (c *Config) DeleteHandler(r *http.Request) *service.Response {
+	id, err := strconv.Atoi(mux.Vars(r)["promotionID"])
+	if err != nil {
+		return service.NewResponse(errors.Wrap(err, errPromotionIDRequired.Error()), http.StatusBadRequest, nil)
+	}
+
+	if err := models.DeletePromotion(id, c.Client); err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+	return service.NewResponse(nil, http.StatusOK, nil)
+}
+
 // RedeemHandler creates a account promotion relationship. This represents
 // an account redeeming a promotion.
 func (c *Config) RedeemHandler(r *http.Request) *service.Response {

@@ -28,6 +28,15 @@ func (p *Promotion) Save(client *sqlx.DB) error {
 	return client.Get(p, "INSERT INTO Promotion (organizationID, name, description, exclusions, expiration, isSingleUse, membershipID) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *;", p.OrganizationID, p.Name, p.Description, p.Exclusions, p.Expiration, p.IsSingleUse, p.MembershipID)
 }
 
+// DeletePromotion removes a promotion from the database.
+func DeletePromotion(id int, client *sqlx.DB) error {
+	_, err := client.Exec("DELETE FROM Promotion WHERE id = $1;", id)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // GetPromotionsByOrganization returns all promotions for a given organization.
 func GetPromotionsByOrganization(organizationID int, client *sqlx.DB) (Promotions, error) {
 	promotions := Promotions{}

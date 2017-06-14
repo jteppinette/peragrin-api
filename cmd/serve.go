@@ -70,6 +70,7 @@ func serve() {
 
 	r.Handle("/promotions/{promotionID:[0-9]+}/redeem", auth.RequiredMiddleware(promotions.RedeemHandler)).Methods(http.MethodPost)
 	r.Handle("/promotions/{promotionID:[0-9]+}", auth.RequiredMiddleware(promotions.UpdateHandler)).Methods(http.MethodPut)
+	r.Handle("/promotions/{promotionID:[0-9]+}", auth.RequiredMiddleware(promotions.DeleteHandler)).Methods(http.MethodDelete)
 
 	log.Infof("initializing server: %s", viper.GetString("PORT"))
 

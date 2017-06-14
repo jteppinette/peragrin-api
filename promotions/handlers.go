@@ -1,6 +1,7 @@
 package promotions
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
 
@@ -11,6 +12,25 @@ import (
 	"gitlab.com/peragrin/api/models"
 	"gitlab.com/peragrin/api/service"
 )
+
+// UpdateHandler updates a promotion.
+func (c *Config) UpdateHandler(r *http.Request) *service.Response {
+	promotion := models.Promotion{}
+	if err := json.NewDecoder(r.Body).Decode(&promotion); err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+
+	id, err := strconv.Atoi(mux.Vars(r)["promotionID"])
+	if err != nil {
+		return service.NewResponse(errors.Wrap(err, errPromotionIDRequired.Error()), http.StatusBadRequest, nil)
+	}
+	promotion.ID = id
+
+	if err := promotion.Save(c.Client); err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+	return service.NewResponse(nil, http.StatusOK, promotion)
+}
 
 // RedeemHandler creates a account promotion relationship. This represents
 // an account redeeming a promotion.

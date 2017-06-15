@@ -93,10 +93,11 @@ func (c *Config) CreateOrganizationHandler(r *http.Request) *service.Response {
 			"state":   organization.State,
 			"country": organization.Country,
 			"zip":     organization.Zip,
-		}).Error(errors.Wrap(err, errGeocode.Error()))
+			"error":   err.Error(),
+		}).Info(errGeocode.Error())
 	}
 
-	if err := organization.Create(account.ID, c.DBClient); err != nil {
+	if err := organization.CreateWithAccount(account.ID, c.DBClient); err != nil {
 		return service.NewResponse(errors.Wrap(err, errCreateOrganization.Error()), http.StatusBadRequest, nil)
 	}
 	return service.NewResponse(nil, http.StatusCreated, organization)

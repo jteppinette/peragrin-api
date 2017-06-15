@@ -143,24 +143,6 @@ func (c *Config) CreateCommunityHandler(r *http.Request) *service.Response {
 	return service.NewResponse(nil, http.StatusCreated, community)
 }
 
-// SetHoursHandler sets the given hours for the requested organization.
-func (c *Config) SetHoursHandler(r *http.Request) *service.Response {
-	organizationID, err := strconv.Atoi(mux.Vars(r)["organizationID"])
-	if err != nil {
-		return service.NewResponse(errors.Wrap(err, errOrganizationIDRequired.Error()), http.StatusBadRequest, nil)
-	}
-
-	hours := models.Hours{}
-	if err := json.NewDecoder(r.Body).Decode(&hours); err != nil {
-		return service.NewResponse(err, http.StatusBadRequest, nil)
-	}
-
-	if err := hours.Set(organizationID, c.DBClient); err != nil {
-		return service.NewResponse(err, http.StatusBadRequest, nil)
-	}
-	return service.NewResponse(nil, http.StatusOK, nil)
-}
-
 // ListHoursHandler generates a response with the operational hours for
 // the requested organization.
 func (c *Config) ListHoursHandler(r *http.Request) *service.Response {

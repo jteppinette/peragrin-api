@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 
@@ -40,6 +41,39 @@ func (c *Config) ListOrganizationsHandler(r *http.Request) *service.Response {
 	}
 
 	return service.NewResponse(nil, http.StatusOK, organizations)
+}
+
+// CreateOrganizationHandler creates a new organization that is automatically
+// joined with the creating community.
+func (c *Config) CreateOrganizationHandler(r *http.Request) *service.Response {
+	communityID, err := strconv.Atoi(mux.Vars(r)["communityID"])
+	if err != nil {
+		return service.NewResponse(errors.Wrap(err, errCommunityIDRequired.Error()), http.StatusBadRequest, nil)
+	}
+
+	organization := models.Organization{}
+	if err := json.NewDecoder(r.Body).Decode(&organization); err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+
+	// If there is a geocode lookup failure, then log the failure. We
+	// will just let the user manually enter the coordinates.
+	if err := organization.SetGeo(c.LocationIQAPIKey); err != nil {
+		log.WithFields(log.Fields{
+			"street":  organization.Street,
+			"city":    organization.City,
+			"state":   organization.State,
+			"country": organization.Country,
+			"zip":     organization.Zip,
+			"error":   err.Error(),
+		}).Info(errGeocodeFailed.Error())
+	}
+
+	if err := organization.CreateWithCommunity(communityID, c.DBClient); err != nil {
+		return service.NewResponse(errors.Wrap(err, errCreateOrganization.Error()), http.StatusBadRequest, nil)
+	}
+
+	return service.NewResponse(nil, http.StatusCreated, organization)
 }
 
 // ListMembershipsHandler returns a response with all memberships

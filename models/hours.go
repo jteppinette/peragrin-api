@@ -16,22 +16,9 @@ type Hour struct {
 // Hours represents the full week schedule.
 type Hours []Hour
 
-// Set replaces an oragnizations hours of operation.
-func (h Hours) Set(organizationID int, client *sqlx.DB) error {
-	tx, err := client.Beginx()
-	if err != nil {
-		return err
-	}
-
-	defer func() {
-		if err != nil {
-			tx.Rollback()
-			return
-		}
-		tx.Commit()
-	}()
-
-	_, err = tx.Exec("DELETE FROM Hours WHERE organizationID = $1", organizationID)
+// Set replaces an organizations hours of operation.
+func (h Hours) txSet(organizationID int, tx *sqlx.Tx) error {
+	_, err := tx.Exec("DELETE FROM Hours WHERE organizationID = $1", organizationID)
 	if err != nil {
 		return err
 	}
@@ -48,7 +35,7 @@ func (h Hours) Set(organizationID int, client *sqlx.DB) error {
 		args[set+3] = v.Close
 	}
 
-	_, err = tx.Exec(client.Rebind(statement[0:len(statement)-1]), args...)
+	_, err = tx.Exec(sqlx.Rebind(sqlx.BindType("postgres"), statement[0:len(statement)-1]), args...)
 	if err != nil {
 		return err
 	}

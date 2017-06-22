@@ -93,3 +93,16 @@ func GetAccountsByMembership(membershipID int, client *sqlx.DB) (Accounts, error
 	}
 	return accounts, nil
 }
+
+// GetAccountsByOrganization returns all accounts that are operating the provided organization.
+func GetAccountsByOrganization(organizationID int, client *sqlx.DB) (Accounts, error) {
+	accounts := Accounts{}
+	if err := client.Select(&accounts, `
+		SELECT Account.email, Account.id
+		FROM Account INNER JOIN AccountOrganization ON (Account.id = AccountOrganization.accountID)
+		WHERE AccountOrganization.organizationID = $1
+	`, organizationID); err != nil {
+		return nil, err
+	}
+	return accounts, nil
+}

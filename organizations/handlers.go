@@ -103,6 +103,22 @@ func (c *Config) ListCommunitiesHandler(r *http.Request) *service.Response {
 	return service.NewResponse(nil, http.StatusOK, communities)
 }
 
+// ListAccountsHandler returns a response with all accounts that are
+// operating the given organization.
+func (c *Config) ListAccountsHandler(r *http.Request) *service.Response {
+	organizationID, err := strconv.Atoi(mux.Vars(r)["organizationID"])
+	if err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+
+	accounts, err := models.GetAccountsByOrganization(organizationID, c.DBClient)
+	if err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+	return service.NewResponse(nil, http.StatusOK, accounts)
+}
+
+
 // JoinCommunityHandler creates a relationship between the given
 // organization and community.
 func (c *Config) JoinCommunityHandler(r *http.Request) *service.Response {

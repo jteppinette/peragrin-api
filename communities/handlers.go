@@ -23,6 +23,21 @@ func (c *Config) ListHandler(r *http.Request) *service.Response {
 	return service.NewResponse(nil, http.StatusOK, communities)
 }
 
+// GetHandler returns a response with the requested community.
+func (c *Config) GetHandler(r *http.Request) *service.Response {
+	id, err := strconv.Atoi(mux.Vars(r)["communityID"])
+	if err != nil {
+		return service.NewResponse(errors.Wrap(err, errCommunityIDRequired.Error()), http.StatusBadRequest, nil)
+	}
+
+	community, err := models.GetCommunityByID(id, c.DBClient)
+	if err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+
+	return service.NewResponse(nil, http.StatusOK, community)
+}
+
 // ListOrganizationsHandler returns a response with all organizations
 // in a given community.
 func (c *Config) ListOrganizationsHandler(r *http.Request) *service.Response {

@@ -70,3 +70,12 @@ func GetCommunitiesByOrganization(organizationID int, client *sqlx.DB) (Communit
 	}
 	return communities, nil
 }
+
+// GetCommunityByID returns the requested community.
+func GetCommunityByID(id int, client *sqlx.DB) (Community, error) {
+	community := Community{}
+	if err := client.Get(&community, "SELECT * FROM Community WHERE id = $1;", id); err != nil {
+		return community, err
+	}
+	return community, nil
+}

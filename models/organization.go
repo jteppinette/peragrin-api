@@ -60,16 +60,10 @@ func (o *Organization) UploadLogo(reader io.Reader, client *minio.Client) error 
 
 // SetPresignedLogoLink sets the Logo field with a presigned get request url.
 func (o *Organization) SetPresignedLogoLink(client *minio.Client) error {
-	object := fmt.Sprintf("logos/%s", strconv.Itoa(o.ID))
-
-	// If this object does not exist, then do not set the presigned link.
-	// TODO: Store a reference to the object in the database to determine existence.
-	_, err := client.StatObject(bucket, object)
-	if err != nil {
+	if o.Logo == "" {
 		return nil
 	}
-
-	url, err := client.PresignedGetObject(bucket, object, time.Second*24*60*60, nil)
+	url, err := client.PresignedGetObject(bucket, fmt.Sprintf("logos/%s", o.Logo), time.Second*24*60*60, nil)
 	if err != nil {
 		return err
 	}

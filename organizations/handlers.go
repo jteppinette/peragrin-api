@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 
@@ -28,6 +29,48 @@ func (c *Config) UpdateHandler(r *http.Request) *service.Response {
 	if err := organization.Update(c.DBClient); err != nil {
 		return service.NewResponse(err, http.StatusBadRequest, nil)
 	}
+	return service.NewResponse(nil, http.StatusOK, organization)
+}
+
+// UploadLogoHandler uploads a new logo to the store and sets the
+// organization's logo field.
+func (c *Config) UploadLogoHandler(r *http.Request) *service.Response {
+	id, err := strconv.Atoi(mux.Vars(r)["organizationID"])
+	if err != nil {
+		return service.NewResponse(errors.Wrap(err, errOrganizationIDRequired.Error()), http.StatusBadRequest, nil)
+	}
+
+	file, header, err := r.FormFile("logo")
+	if err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+
+	organization, err := models.GetOrganizationByID(id, c.DBClient)
+	if err != nil {
+		return service.NewResponse(err, http.StatusInternalServerError, nil)
+	}
+
+	organization.Logo = header.Filename
+	if err := organization.UploadLogo(file, organization.Logo, c.StoreClient); err != nil {
+		log.WithFields(log.Fields{
+			"file":   file,
+			"header": header,
+			"error":  err.Error(),
+			"id":     r.Header.Get("X-Request-ID"),
+		}).Info(errUploadLogo.Error())
+		return service.NewResponse(errUploadLogo, http.StatusBadRequest, nil)
+	}
+
+	if err := organization.Update(c.DBClient); err != nil {
+		log.WithFields(log.Fields{
+			"logo":           organization.Logo,
+			"organizationID": organization.ID,
+			"error":          err.Error(),
+			"id":             r.Header.Get("X-Request-ID"),
+		}).Info(errUpdateOrganization.Error())
+		return service.NewResponse(errUpdateOrganization, http.StatusBadRequest, nil)
+	}
+
 	return service.NewResponse(nil, http.StatusOK, organization)
 }
 
@@ -117,7 +160,6 @@ func (c *Config) ListAccountsHandler(r *http.Request) *service.Response {
 	}
 	return service.NewResponse(nil, http.StatusOK, accounts)
 }
-
 
 // JoinCommunityHandler creates a relationship between the given
 // organization and community.

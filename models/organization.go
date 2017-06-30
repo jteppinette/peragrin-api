@@ -3,7 +3,6 @@ package models
 import (
 	"fmt"
 	"io"
-	"strconv"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -53,8 +52,8 @@ func (o *Organization) SetGeo(key string) error {
 }
 
 // UploadLogo puts a new object in the static store.
-func (o *Organization) UploadLogo(reader io.Reader, client *minio.Client) error {
-	_, err := client.PutObject(bucket, fmt.Sprintf("logos/%s", strconv.Itoa(o.ID)), reader, "application/octet-stream")
+func (o *Organization) UploadLogo(reader io.Reader, name string, client *minio.Client) error {
+	_, err := client.PutObject(bucket, fmt.Sprintf("logos/%s", name), reader, "application/octet-stream")
 	return err
 }
 
@@ -148,20 +147,20 @@ func (o *Organization) CreateWithCommunity(communityID int, client *sqlx.DB) err
 
 func (o *Organization) txCreate(tx *sqlx.Tx) error {
 	return tx.Get(o, `
-		INSERT INTO Organization (name, street, city, state, country, zip, lon, lat, email, phone, website, category)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+		INSERT INTO Organization (name, street, city, state, country, zip, lon, lat, email, phone, website, category, logo)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 		RETURNING *;
-	`, o.Name, o.Street, o.City, o.State, o.Country, o.Zip, o.Lon, o.Lat, o.Email, o.Phone, o.Website, o.Category)
+	`, o.Name, o.Street, o.City, o.State, o.Country, o.Zip, o.Lon, o.Lat, o.Email, o.Phone, o.Website, o.Category, "")
 }
 
 // Update updates the fields of a given organization.
 func (o *Organization) Update(client *sqlx.DB) error {
 	if err := client.Get(o, `
 		UPDATE Organization
-		SET name = $2, street = $3, city = $4, state = $5, country = $6, zip = $7, lon = $8, lat = $9, email = $10, phone = $11, website = $12, category = $13
+		SET name = $2, street = $3, city = $4, state = $5, country = $6, zip = $7, lon = $8, lat = $9, email = $10, phone = $11, website = $12, category = $13, logo = $14
 		WHERE id = $1
 		RETURNING *;
-	`, o.ID, o.Name, o.Street, o.City, o.State, o.Country, o.Zip, o.Lon, o.Lat, o.Email, o.Phone, o.Website, o.Category); err != nil {
+	`, o.ID, o.Name, o.Street, o.City, o.State, o.Country, o.Zip, o.Lon, o.Lat, o.Email, o.Phone, o.Website, o.Category, o.Logo); err != nil {
 		return err
 	}
 	return nil

@@ -1,43 +1,30 @@
-image: docker:latest
-
-variables:
-  DOCKER_DRIVER: overlay
-
 stages:
   - build
-  - release
   - deploy
 
 variables:
-  CONTAINER_BUILD_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME
-  CONTAINER_RELEASE_IMAGE: $CI_REGISTRY_IMAGE:latest
-
-services:
-  - docker:dind
-
-before_script:
-  - docker info
-  - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME
 
 build:
   stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  variables:
+    DOCKER_DRIVER: overlay
   script:
-    - docker build -t $CONTAINER_BUILD_IMAGE .
-    - docker push $CONTAINER_BUILD_IMAGE
-
-release:
-  stage: release
-  script:
-    - docker pull $CONTAINER_BUILD_IMAGE
-    - docker tag $CONTAINER_BUILD_IMAGE $CONTAINER_RELEASE_IMAGE
-    - docker push $CONTAINER_RELEASE_IMAGE
-  only:
-    - master
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker build -t $IMAGE .
+    - docker push $IMAGE
 
 deploy:
   stage: deploy
   script:
-    - docker pull $CI_REGISTRY/jteppinette/stackahoy
-    - docker run --rm $CI_REGISTRY/jteppinette/stackahoy deploy -t $STACKAHOY_TOKEN -b master -r 58f913a135e7e10900de8bda --skip-delivery
+    - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
+    - eval $(ssh-agent -s)
+    - ssh-add <(echo "$SSH_PRIVATE_KEY")
+    - mkdir -p ~/.ssh
+    - echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
+    - ssh root@$SWARM_MANAGER -C "docker service update --image $IMAGE peragrin_api --with-registry-auth"
   only:
     - master

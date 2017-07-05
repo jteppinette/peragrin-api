@@ -27,9 +27,10 @@ type Organization struct {
 	Phone    string  `json:"phone"`
 	Website  string  `json:"website"`
 	Category string  `json:"category"`
+	Logo     string  `json:"logo"`
 
-	// Logo is used to send the presigned Logo file link to the client.
-	Logo string `json:"logo"`
+	// LogoURL is used to send the presigned Logo url to the client.
+	LogoURL string `json:"logoURL"`
 
 	// Hours needs to be explicitly set. It will not be returned in all responses.
 	Hours Hours `json:"hours"`
@@ -66,7 +67,7 @@ func (o *Organization) SetPresignedLogoLink(client *minio.Client) error {
 	if err != nil {
 		return err
 	}
-	o.Logo = url.String()
+	o.LogoURL = url.String()
 	return nil
 }
 

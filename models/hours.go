@@ -23,6 +23,10 @@ func (h Hours) txSet(organizationID int, tx *sqlx.Tx) error {
 		return err
 	}
 
+	if len(h) == 0 {
+		return nil
+	}
+
 	statement := "INSERT INTO Hours (organizationID, weekday, start, close) VALUES "
 	args := make([]interface{}, len(h)*4)
 

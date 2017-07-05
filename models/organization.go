@@ -153,16 +153,39 @@ func (o *Organization) txCreate(tx *sqlx.Tx) error {
 	`, o.Name, o.Street, o.City, o.State, o.Country, o.Zip, o.Lon, o.Lat, o.Email, o.Phone, o.Website, o.Category, "")
 }
 
-// Update updates the fields of a given organization.
-func (o *Organization) Update(client *sqlx.DB) error {
-	if err := client.Get(o, `
+func (o *Organization) txUpdate(tx *sqlx.Tx) error {
+	return tx.Get(o, `
 		UPDATE Organization
 		SET name = $2, street = $3, city = $4, state = $5, country = $6, zip = $7, lon = $8, lat = $9, email = $10, phone = $11, website = $12, category = $13, logo = $14
 		WHERE id = $1
 		RETURNING *;
-	`, o.ID, o.Name, o.Street, o.City, o.State, o.Country, o.Zip, o.Lon, o.Lat, o.Email, o.Phone, o.Website, o.Category, o.Logo); err != nil {
+	`, o.ID, o.Name, o.Street, o.City, o.State, o.Country, o.Zip, o.Lon, o.Lat, o.Email, o.Phone, o.Website, o.Category, o.Logo)
+}
+
+// Update updates the fields of a given organization.
+func (o *Organization) Update(client *sqlx.DB) error {
+	tx, err := client.Beginx()
+	if err != nil {
 		return err
 	}
+
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+			return
+		}
+		tx.Commit()
+	}()
+
+	err = o.txUpdate(tx)
+	if err != nil {
+		return err
+	}
+	err = o.Hours.txSet(o.ID, tx)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

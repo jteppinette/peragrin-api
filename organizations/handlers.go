@@ -50,6 +50,12 @@ func (c *Config) UploadLogoHandler(r *http.Request) *service.Response {
 		return service.NewResponse(err, http.StatusInternalServerError, nil)
 	}
 
+	hours, err := models.GetHoursByOrganization(organization.ID, c.DBClient)
+	if err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+	organization.Hours = hours
+
 	organization.Logo = header.Filename
 	if err := organization.UploadLogo(file, organization.Logo, c.StoreClient); err != nil {
 		log.WithFields(log.Fields{

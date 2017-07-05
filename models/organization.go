@@ -31,8 +31,8 @@ type Organization struct {
 	// Logo is used to send the presigned Logo file link to the client.
 	Logo string `json:"logo"`
 
-	// Hours is only set during organization creation.
-	Hours Hours `json:"hours,omitempty"`
+	// Hours needs to be explicitly set. It will not be returned in all responses.
+	Hours Hours `json:"hours"`
 
 	// IsAdministrator is only populated when this organization
 	// is in the context of a community.

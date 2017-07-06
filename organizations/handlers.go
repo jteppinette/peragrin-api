@@ -76,6 +76,10 @@ func (c *Config) UploadLogoHandler(r *http.Request) *service.Response {
 		return service.NewResponse(errUpdateOrganization, http.StatusBadRequest, nil)
 	}
 
+	if err := organization.SetPresignedLogoLink(c.StoreClient); err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+
 	return service.NewResponse(nil, http.StatusOK, organization)
 }
 

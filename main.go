@@ -74,6 +74,7 @@ func main() {
 
 	root.AddCommand(cmd.Migrate)
 	root.AddCommand(cmd.Serve)
+	root.AddCommand(cmd.UpdateOrganizationLogos)
 
 	if err := root.Execute(); err != nil {
 		log.Fatal(err)

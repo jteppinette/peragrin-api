@@ -54,7 +54,7 @@ func (o *Organization) SetGeo(key string) error {
 
 // UploadLogo puts a new object in the static store.
 func (o *Organization) UploadLogo(reader io.Reader, name string, client *minio.Client) error {
-	_, err := client.PutObject(bucket, fmt.Sprintf("logos/%s", name), reader, "application/octet-stream")
+	_, err := client.PutObject(bucket, fmt.Sprintf("logos/%d-%s", o.ID, name), reader, "application/octet-stream")
 	return err
 }
 
@@ -63,7 +63,7 @@ func (o *Organization) SetPresignedLogoLink(client *minio.Client) error {
 	if o.Logo == "" {
 		return nil
 	}
-	url, err := client.PresignedGetObject(bucket, fmt.Sprintf("logos/%s", o.Logo), time.Second*24*60*60, nil)
+	url, err := client.PresignedGetObject(bucket, fmt.Sprintf("logos/%d-%s", o.ID, o.Logo), time.Second*24*60*60, nil)
 	if err != nil {
 		return err
 	}
@@ -80,6 +80,16 @@ func (organizations Organizations) SetPresignedLogoLinks(client *minio.Client) e
 		organizations[i] = o
 	}
 	return nil
+}
+
+// GetLogo returns an io.Reader of the logo stored in minio.
+func (o *Organization) GetLogo(name string, client *minio.Client) (*minio.Object, error) {
+	return client.GetObject(bucket, name)
+}
+
+// RemoveLogo removes an organizations logo from minio.
+func (o *Organization) RemoveLogo(client *minio.Client) error {
+	return client.RemoveObject(bucket, fmt.Sprintf("logos/%s", o.Logo))
 }
 
 // CreateWithAccount persists a new organization with hours in the database and creates the
@@ -212,6 +222,15 @@ func GetOrganizationsByCommunity(communityID int, client *sqlx.DB) (Organization
 func GetOrganizationsByAccount(accountID int, client *sqlx.DB) (Organizations, error) {
 	organizations := Organizations{}
 	if err := client.Select(&organizations, "SELECT Organization.* FROM Organization INNER JOIN AccountOrganization ON (Organization.id = AccountOrganization.organizationID) WHERE accountID = $1;", accountID); err != nil {
+		return nil, err
+	}
+	return organizations, nil
+}
+
+// GetOrganizations returns all organizations.
+func GetOrganizations(client *sqlx.DB) (Organizations, error) {
+	organizations := Organizations{}
+	if err := client.Select(&organizations, "SELECT * FROM Organization"); err != nil {
 		return nil, err
 	}
 	return organizations, nil

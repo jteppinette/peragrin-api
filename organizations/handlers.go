@@ -56,7 +56,7 @@ func (c *Config) UploadLogoHandler(r *http.Request) *service.Response {
 	}
 
 	organization.Logo = header.Filename
-	if err := organization.UploadLogo(file, organization.Logo, c.StoreClient); err != nil {
+	if err := organization.UploadLogo(file, c.StoreClient); err != nil {
 		log.WithFields(log.Fields{
 			"file":   file,
 			"header": header,

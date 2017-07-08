@@ -33,7 +33,7 @@ func serve() {
 		log.Fatal(err)
 	}
 
-	auth := auth.Init(dbClient, storeClient, viper.GetString("TOKEN_SECRET"), viper.GetString("LOCATIONIQ_API_KEY"))
+	auth := auth.Init(dbClient, storeClient, viper.GetString("TOKEN_SECRET"), viper.GetString("LOCATIONIQ_API_KEY"), viper.GetString("APP_DOMAIN"), viper.GetString("MANDRILL_KEY"))
 	organizations := organizations.Init(dbClient, storeClient)
 	communities := communities.Init(dbClient, storeClient, viper.GetString("LOCATIONIQ_API_KEY"))
 	memberships := memberships.Init(dbClient)
@@ -42,6 +42,7 @@ func serve() {
 	r := mux.NewRouter()
 	r.Handle("/auth/login", service.Handler(auth.LoginHandler))
 	r.Handle("/auth/register", service.Handler(auth.RegisterHandler))
+	r.Handle("/auth/forgot-password", service.Handler(auth.ForgotPasswordHandler))
 	r.Handle("/auth/account", auth.RequiredMiddleware(auth.GetAccountHandler)).Methods(http.MethodGet)
 	r.Handle("/auth/account", auth.RequiredMiddleware(auth.UpdateAccountHandler)).Methods(http.MethodPost)
 	r.Handle("/auth/organizations", auth.RequiredMiddleware(auth.ListOrganizationsHandler)).Methods(http.MethodGet)
@@ -106,4 +107,10 @@ func init() {
 
 	Serve.PersistentFlags().StringP("locationiq-api-key", "", "", "api key to access location iq api")
 	viper.BindPFlag("LOCATIONIQ_API_KEY", Serve.PersistentFlags().Lookup("locationiq-api-key"))
+
+	Serve.PersistentFlags().StringP("mandrill-key", "", "", "mandrill key")
+	viper.BindPFlag("MANDRILL_KEY", Serve.PersistentFlags().Lookup("mandrill-key"))
+
+	Serve.PersistentFlags().StringP("app-domain", "", "http://localhost:8080", "app domain")
+	viper.BindPFlag("APP_DOMAIN", Serve.PersistentFlags().Lookup("app-domain"))
 }

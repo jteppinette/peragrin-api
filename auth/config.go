@@ -16,8 +16,10 @@ type Config struct {
 	TokenSecret      string
 	Clock            timer
 	LocationIQAPIKey string
+	AppDomain        string
+	MandrillKey      string
 }
 
-func Init(dbClient *sqlx.DB, storeClient *minio.Client, tokenSecret string, locationIQAPIKey string) *Config {
-	return &Config{dbClient, storeClient, tokenSecret, clock{}, locationIQAPIKey}
+func Init(dbClient *sqlx.DB, storeClient *minio.Client, tokenSecret, locationIQAPIKey, appDomain, mandrillKey string) *Config {
+	return &Config{dbClient, storeClient, tokenSecret, clock{}, locationIQAPIKey, appDomain, mandrillKey}
 }

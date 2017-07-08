@@ -30,3 +30,4 @@ import:
   version: ~2.1.0
 - package: github.com/mattes/migrate
   version: ~3.0.1
+- package: github.com/mattbaird/gochimp

@@ -2,12 +2,14 @@ package auth
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/context"
+	"github.com/mattbaird/gochimp"
 	"github.com/pkg/errors"
 	"gitlab.com/peragrin/api/models"
 	"gitlab.com/peragrin/api/service"
@@ -47,6 +49,61 @@ func (c *Config) UpdateAccountHandler(r *http.Request) *service.Response {
 	}
 
 	return service.NewResponse(nil, http.StatusOK, account)
+}
+
+// ForgotPasswordHandler generates a token that can be used to reset the password
+// of the account with the provided email address.
+func (c *Config) ForgotPasswordHandler(r *http.Request) *service.Response {
+	form := struct {
+		Email string `json:"email"`
+	}{}
+	if err := json.NewDecoder(r.Body).Decode(&form); err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+
+	account, err := models.GetAccountByEmail(form.Email, c.DBClient)
+	if err != nil {
+		// We don't want to allow account enumeration, so we are just goign to
+		// log the error and return the success response.
+		log.WithFields(log.Fields{
+			"email": form.Email,
+		}).Info(errAccountNotFound.Error())
+	}
+
+	s, err := token(c.TokenSecret, *account, c.Clock)
+	if err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+
+	mandrill, err := gochimp.NewMandrill(c.MandrillKey)
+	if err != nil {
+		return service.NewResponse(err, http.StatusInternalServerError, nil)
+	}
+
+	content := []gochimp.Var{
+		gochimp.Var{"RESET_PASSWORD_LINK", fmt.Sprintf("%s/#/auth/set-password?token=%s", c.AppDomain, s)},
+	}
+	rendered, err := mandrill.TemplateRender("reset-password", nil, content)
+	if err != nil {
+		return service.NewResponse(err, http.StatusInternalServerError, nil)
+	}
+
+	message := gochimp.Message{
+		Html:      rendered,
+		Subject:   "Reset Password",
+		FromEmail: "donotreply@peragrin.com",
+		FromName:  "Peragrin",
+		To: []gochimp.Recipient{
+			gochimp.Recipient{Email: account.Email},
+		},
+	}
+
+	_, err = mandrill.MessageSend(message, false)
+	if err != nil {
+		return service.NewResponse(err, http.StatusInternalServerError, nil)
+	}
+
+	return service.NewResponse(nil, http.StatusOK, nil)
 }
 
 // ListOrganizationsHandler generates a response object containing the organizations that are

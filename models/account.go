@@ -1,9 +1,11 @@
 package models
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/mattbaird/gochimp"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -40,6 +42,34 @@ func (a *Account) Save(client *sqlx.DB) error {
 		return client.Get(a, "UPDATE Account SET email = $2, password = $3 WHERE id = $1 RETURNING *;", a.ID, a.Email, a.Password)
 	}
 	return client.Get(a, "INSERT INTO Account (email, password) VALUES ($1, $2) RETURNING *;", a.Email, a.Password)
+}
+
+// SendResetPasswordEmail sends a templated reset password email for the provided user.
+func (a *Account) SendResetPasswordEmail(appDomain, token string, client *gochimp.MandrillAPI) error {
+	content := []gochimp.Var{
+		gochimp.Var{"RESET_PASSWORD_LINK", fmt.Sprintf("%s/#/auth/set-password?token=%s", appDomain, token)},
+	}
+	rendered, err := client.TemplateRender("reset-password", nil, content)
+	if err != nil {
+		return err
+	}
+
+	message := gochimp.Message{
+		Html:      rendered,
+		Subject:   "Reset Password",
+		FromEmail: "donotreply@peragrin.com",
+		FromName:  "Peragrin",
+		To: []gochimp.Recipient{
+			gochimp.Recipient{Email: a.Email},
+		},
+	}
+
+	_, err = client.MessageSend(message, false)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // CreateWithMembership creates a new account with a connection to the

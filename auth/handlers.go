@@ -2,14 +2,12 @@ package auth
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/context"
-	"github.com/mattbaird/gochimp"
 	"github.com/pkg/errors"
 	"gitlab.com/peragrin/api/models"
 	"gitlab.com/peragrin/api/service"
@@ -75,31 +73,7 @@ func (c *Config) ForgotPasswordHandler(r *http.Request) *service.Response {
 		return service.NewResponse(err, http.StatusBadRequest, nil)
 	}
 
-	mandrill, err := gochimp.NewMandrill(c.MandrillKey)
-	if err != nil {
-		return service.NewResponse(err, http.StatusInternalServerError, nil)
-	}
-
-	content := []gochimp.Var{
-		gochimp.Var{"RESET_PASSWORD_LINK", fmt.Sprintf("%s/#/auth/set-password?token=%s", c.AppDomain, s)},
-	}
-	rendered, err := mandrill.TemplateRender("reset-password", nil, content)
-	if err != nil {
-		return service.NewResponse(err, http.StatusInternalServerError, nil)
-	}
-
-	message := gochimp.Message{
-		Html:      rendered,
-		Subject:   "Reset Password",
-		FromEmail: "donotreply@peragrin.com",
-		FromName:  "Peragrin",
-		To: []gochimp.Recipient{
-			gochimp.Recipient{Email: account.Email},
-		},
-	}
-
-	_, err = mandrill.MessageSend(message, false)
-	if err != nil {
+	if err := account.SendResetPasswordEmail(c.AppDomain, s, c.MailClient); err != nil {
 		return service.NewResponse(err, http.StatusInternalServerError, nil)
 	}
 

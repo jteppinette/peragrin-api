@@ -7,6 +7,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
+	"github.com/mattbaird/gochimp"
 	minio "github.com/minio/minio-go"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -33,7 +34,12 @@ func serve() {
 		log.Fatal(err)
 	}
 
-	auth := auth.Init(dbClient, storeClient, viper.GetString("TOKEN_SECRET"), viper.GetString("LOCATIONIQ_API_KEY"), viper.GetString("APP_DOMAIN"), viper.GetString("MANDRILL_KEY"))
+	mailClient, err := gochimp.NewMandrill(viper.GetString("MANDRILL_KEY"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	auth := auth.Init(dbClient, storeClient, viper.GetString("TOKEN_SECRET"), viper.GetString("LOCATIONIQ_API_KEY"), viper.GetString("APP_DOMAIN"), mailClient)
 	organizations := organizations.Init(dbClient, storeClient)
 	communities := communities.Init(dbClient, storeClient, viper.GetString("LOCATIONIQ_API_KEY"))
 	memberships := memberships.Init(dbClient)

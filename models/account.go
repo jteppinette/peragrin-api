@@ -3,7 +3,9 @@ package models
 import (
 	"fmt"
 	"strings"
+	"time"
 
+	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/jmoiron/sqlx"
 	"github.com/mattbaird/gochimp"
 	"golang.org/x/crypto/bcrypt"
@@ -44,28 +46,41 @@ func (a *Account) Save(client *sqlx.DB) error {
 	return client.Get(a, "INSERT INTO Account (email, password) VALUES ($1, $2) RETURNING *;", a.Email, a.Password)
 }
 
+type Timer interface {
+	Now() time.Time
+}
+type AuthTokenClaims struct {
+	jwt.StandardClaims
+	Account
+}
+
+func (a Account) AuthToken(key string, c Timer, expiration time.Duration) (string, error) {
+	return jwt.NewWithClaims(jwt.SigningMethodHS256, AuthTokenClaims{
+		jwt.StandardClaims{ExpiresAt: c.Now().Add(expiration).Unix()},
+		a,
+	}).SignedString([]byte(key))
+}
+
 // SendResetPasswordEmail sends a templated reset password email for the provided user.
-func (a *Account) SendResetPasswordEmail(appDomain, token string, client *gochimp.MandrillAPI) error {
-	content := []gochimp.Var{
-		gochimp.Var{"RESET_PASSWORD_LINK", fmt.Sprintf("%s/#/auth/set-password?token=%s", appDomain, token)},
-	}
-	rendered, err := client.TemplateRender("reset-password", nil, content)
+func (a *Account) SendResetPasswordEmail(appDomain, tokenSecret string, clock Timer, client *gochimp.MandrillAPI) error {
+	token, err := a.AuthToken(tokenSecret, clock, time.Hour*24)
 	if err != nil {
 		return err
 	}
 
-	message := gochimp.Message{
+	merge := []gochimp.Var{{"RESET_PASSWORD_LINK", fmt.Sprintf("%s/#/auth/set-password?token=%s", appDomain, token)}}
+	rendered, err := client.TemplateRender("reset-password", nil, merge)
+	if err != nil {
+		return err
+	}
+
+	if _, err := client.MessageSend(gochimp.Message{
 		Html:      rendered,
 		Subject:   "Reset Password",
 		FromEmail: "donotreply@peragrin.com",
 		FromName:  "Peragrin",
-		To: []gochimp.Recipient{
-			gochimp.Recipient{Email: a.Email},
-		},
-	}
-
-	_, err = client.MessageSend(message, false)
-	if err != nil {
+		To:        []gochimp.Recipient{{Email: a.Email}},
+	}, false); err != nil {
 		return err
 	}
 

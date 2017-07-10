@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/dgrijalva/jwt-go"
@@ -68,12 +69,7 @@ func (c *Config) ForgotPasswordHandler(r *http.Request) *service.Response {
 		}).Info(errAccountNotFound.Error())
 	}
 
-	s, err := token(c.TokenSecret, *account, c.Clock)
-	if err != nil {
-		return service.NewResponse(err, http.StatusBadRequest, nil)
-	}
-
-	if err := account.SendResetPasswordEmail(c.AppDomain, s, c.MailClient); err != nil {
+	if err := account.SendResetPasswordEmail(c.AppDomain, c.TokenSecret, c.Clock, c.MailClient); err != nil {
 		return service.NewResponse(err, http.StatusInternalServerError, nil)
 	}
 
@@ -148,7 +144,7 @@ func (c *Config) LoginHandler(r *http.Request) *service.Response {
 		return service.NewResponse(err, http.StatusUnauthorized, map[string]string{"msg": err.Error()})
 	}
 
-	str, err := token(c.TokenSecret, account, c.Clock)
+	str, err := account.AuthToken(c.TokenSecret, c.Clock, time.Hour*24)
 	if err != nil {
 		return service.NewResponse(err, http.StatusUnauthorized, map[string]string{"msg": err.Error()})
 	}
@@ -174,7 +170,7 @@ func (c *Config) RegisterHandler(r *http.Request) *service.Response {
 		return service.NewResponse(errRegistrationFailed, http.StatusBadRequest, map[string]string{"msg": errRegistrationFailed.Error()})
 	}
 
-	str, err := token(c.TokenSecret, a, c.Clock)
+	str, err := a.AuthToken(c.TokenSecret, c.Clock, time.Hour*24)
 	if err != nil {
 		return service.NewResponse(err, http.StatusBadRequest, nil)
 	}
@@ -197,13 +193,13 @@ func (c *Config) RequiredMiddleware(h service.Handler) service.Handler {
 
 		var account models.Account
 		if strings.HasPrefix(authorization, "Bearer ") {
-			token, err := jwt.ParseWithClaims(strings.Split(authorization, " ")[1], &Claims{}, func(token *jwt.Token) (interface{}, error) {
+			token, err := jwt.ParseWithClaims(strings.Split(authorization, " ")[1], &models.AuthTokenClaims{}, func(token *jwt.Token) (interface{}, error) {
 				return []byte(c.TokenSecret), nil
 			})
 			if err != nil {
 				return service.NewResponse(errors.Wrap(err, errJWTAuth.Error()), http.StatusUnauthorized, nil)
 			}
-			account = token.Claims.(*Claims).Account
+			account = token.Claims.(*models.AuthTokenClaims).Account
 		} else if strings.HasPrefix(authorization, "Basic ") {
 			email, password, ok := r.BasicAuth()
 			if !ok {

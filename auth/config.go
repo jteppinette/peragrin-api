@@ -5,22 +5,25 @@ import (
 	"github.com/mattbaird/gochimp"
 	minio "github.com/minio/minio-go"
 	"github.com/unrolled/render"
+	"gitlab.com/peragrin/api/models"
 )
 
 var (
 	rend = render.New().JSON
 )
 
+// Config defines a single instance of the auth package.
 type Config struct {
 	DBClient         *sqlx.DB
 	StoreClient      *minio.Client
+	MailClient       *gochimp.MandrillAPI
+	Clock            models.Timer
 	TokenSecret      string
-	Clock            timer
 	LocationIQAPIKey string
 	AppDomain        string
-	MailClient       *gochimp.MandrillAPI
 }
 
-func Init(dbClient *sqlx.DB, storeClient *minio.Client, tokenSecret string, locationIQAPIKey string, appDomain string, mailClient *gochimp.MandrillAPI) *Config {
-	return &Config{dbClient, storeClient, tokenSecret, clock{}, locationIQAPIKey, appDomain, mailClient}
+// Init generates an auth.Config instance.
+func Init(dbClient *sqlx.DB, storeClient *minio.Client, mailClient *gochimp.MandrillAPI, clock models.Timer, tokenSecret string, locationIQAPIKey string, appDomain string) *Config {
+	return &Config{dbClient, storeClient, mailClient, clock, tokenSecret, locationIQAPIKey, appDomain}
 }

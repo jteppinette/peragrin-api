@@ -30,7 +30,7 @@ func TestLoginHandler(t *testing.T) {
 	dbAccount := models.Account{Email: "jte@jte.com", Password: "jte", ID: 1}
 	dbAccount.SetPassword(strings.Split(dbAccount.Email, "@")[0])
 
-	expectedResponseToken, _ := token("secret", models.Account{Email: dbAccount.Email, ID: dbAccount.ID}, mockClock{})
+	expectedResponseToken, _ := models.Account{Email: dbAccount.Email, ID: dbAccount.ID}.AuthToken("secret", mockClock{}, time.Hour*24)
 
 	tests := []struct {
 		bytes    []byte
@@ -59,8 +59,7 @@ func TestLoginHandler(t *testing.T) {
 	for _, test := range tests {
 		db, mock, _ := sqlmock.New()
 		defer db.Close()
-		config := Init(sqlx.NewDb(db, "sqlmock"), nil, "secret", "", "", nil)
-		config.Clock = mockClock{}
+		config := Init(sqlx.NewDb(db, "sqlmock"), nil, nil, mockClock{}, "secret", "", "")
 
 		creds := Credentials{}
 		unmarshalErr := json.Unmarshal(test.bytes, &creds)
@@ -91,8 +90,8 @@ func TestRequiredMiddleware(t *testing.T) {
 
 	expectedResponseAccount := models.Account{Email: dbAccount.Email, ID: dbAccount.ID}
 
-	authenticatedJWT, _ := token("secret", expectedResponseAccount, clock{})
-	unauthenticatedJWT, _ := token("bad-secret", expectedResponseAccount, clock{})
+	authenticatedJWT, _ := expectedResponseAccount.AuthToken("secret", mockClock{}, time.Hour*24)
+	unauthenticatedJWT, _ := expectedResponseAccount.AuthToken("bad-secret", mockClock{}, time.Hour*24)
 
 	tests := []struct {
 		header   http.Header
@@ -131,7 +130,7 @@ func TestRequiredMiddleware(t *testing.T) {
 	for _, test := range tests {
 		db, mock, _ := sqlmock.New()
 		defer db.Close()
-		config := Init(sqlx.NewDb(db, "sqlmock"), nil, "secret", "", "", nil)
+		config := Init(sqlx.NewDb(db, "sqlmock"), nil, nil, mockClock{}, "secret", "", "")
 
 		var expected *sqlmock.ExpectedQuery
 		if email, _, ok := parseBasicAuth(test.header.Get("Authorization")); ok {

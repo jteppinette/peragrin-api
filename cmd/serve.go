@@ -21,6 +21,12 @@ import (
 	"gitlab.com/peragrin/api/service"
 )
 
+type clock struct{}
+
+func (clock) Now() time.Time {
+	return time.Now()
+}
+
 func serve() {
 	log.SetFormatter(&log.JSONFormatter{})
 
@@ -39,7 +45,7 @@ func serve() {
 		log.Fatal(err)
 	}
 
-	auth := auth.Init(dbClient, storeClient, viper.GetString("TOKEN_SECRET"), viper.GetString("LOCATIONIQ_API_KEY"), viper.GetString("APP_DOMAIN"), mailClient)
+	auth := auth.Init(dbClient, storeClient, mailClient, clock{}, viper.GetString("TOKEN_SECRET"), viper.GetString("LOCATIONIQ_API_KEY"), viper.GetString("APP_DOMAIN"))
 	organizations := organizations.Init(dbClient, storeClient)
 	communities := communities.Init(dbClient, storeClient, viper.GetString("LOCATIONIQ_API_KEY"))
 	memberships := memberships.Init(dbClient)

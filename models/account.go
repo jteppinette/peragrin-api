@@ -83,7 +83,30 @@ func (a *Account) SendResetPasswordEmail(appDomain, tokenSecret string, clock Ti
 	}, false); err != nil {
 		return err
 	}
+	return nil
+}
 
+func (a *Account) SendAccountActivationEmail(appDomain, tokenSecret string, clock Timer, client *gochimp.MandrillAPI) error {
+	token, err := a.AuthToken(tokenSecret, clock, time.Hour*24*7)
+	if err != nil {
+		return err
+	}
+
+	merge := []gochimp.Var{{"SET_PASSWORD_LINK", fmt.Sprintf("%s/#/auth/set-password?token=%s", appDomain, token)}}
+	rendered, err := client.TemplateRender("account-activation", nil, merge)
+	if err != nil {
+		return err
+	}
+
+	if _, err := client.MessageSend(gochimp.Message{
+		Html:      rendered,
+		Subject:   "Account Activation",
+		FromEmail: "donotreply@peragrin.com",
+		FromName:  "Peragrin",
+		To:        []gochimp.Recipient{{Email: a.Email}},
+	}, false); err != nil {
+		return err
+	}
 	return nil
 }
 

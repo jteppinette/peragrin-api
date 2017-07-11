@@ -48,7 +48,7 @@ func serve() {
 	auth := auth.Init(dbClient, storeClient, mailClient, clock{}, viper.GetString("TOKEN_SECRET"), viper.GetString("LOCATIONIQ_API_KEY"), viper.GetString("APP_DOMAIN"))
 	organizations := organizations.Init(dbClient, storeClient)
 	communities := communities.Init(dbClient, storeClient, viper.GetString("LOCATIONIQ_API_KEY"))
-	memberships := memberships.Init(dbClient)
+	memberships := memberships.Init(dbClient, mailClient, clock{}, viper.GetString("TOKEN_SECRET"), viper.GetString("APP_DOMAIN"))
 	promotions := promotions.Init(dbClient)
 
 	r := mux.NewRouter()

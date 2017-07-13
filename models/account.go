@@ -140,9 +140,46 @@ func (a *Account) CreateWithMembership(membershipID int, client *sqlx.DB) error 
 	return nil
 }
 
+// CreateWithAccount creates a new account with a connection to the
+// provided organization.
+func (a *Account) CreateWithOrganization(organizationID int, client *sqlx.DB) error {
+	tx, err := client.Beginx()
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+			return
+		}
+		tx.Commit()
+	}()
+
+	err = tx.Get(a, "INSERT INTO Account (email, password) VALUES ($1, $2) RETURNING *;", a.Email, a.Password)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec("INSERT INTO AccountOrganization (accountID, organizationID) VALUES ($1, $2);", a.ID, organizationID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // AddMembership adds a new membership to the given account.
 func (a *Account) AddMembership(membershipID int, client *sqlx.DB) error {
 	if _, err := client.Exec("INSERT INTO AccountMembership (accountID, membershipID) VALUES ($1, $2);", a.ID, membershipID); err != nil {
+		return err
+	}
+	return nil
+}
+
+// AddOrganization adds a new organization to the given account.
+func (a *Account) AddOrganization(organizationID int, client *sqlx.DB) error {
+	if _, err := client.Exec("INSERT INTO AccountOrganization (accountID, organizationID) VALUES ($1, $2);", a.ID, organizationID); err != nil {
 		return err
 	}
 	return nil

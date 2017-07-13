@@ -46,7 +46,7 @@ func serve() {
 	}
 
 	auth := auth.Init(dbClient, storeClient, mailClient, clock{}, viper.GetString("TOKEN_SECRET"), viper.GetString("LOCATIONIQ_API_KEY"), viper.GetString("APP_DOMAIN"))
-	organizations := organizations.Init(dbClient, storeClient)
+	organizations := organizations.Init(dbClient, storeClient, mailClient, clock{}, viper.GetString("TOKEN_SECRET"), viper.GetString("APP_DOMAIN"))
 	communities := communities.Init(dbClient, storeClient, viper.GetString("LOCATIONIQ_API_KEY"))
 	memberships := memberships.Init(dbClient, mailClient, clock{}, viper.GetString("TOKEN_SECRET"), viper.GetString("APP_DOMAIN"))
 	promotions := promotions.Init(dbClient)
@@ -70,7 +70,7 @@ func serve() {
 	r.Handle("/communities/{communityID:[0-9]+}/memberships", service.Handler(communities.CreateMembershipHandler)).Methods(http.MethodPost)
 
 	r.Handle("/memberships/{membershipID:[0-9]+}/accounts", auth.RequiredMiddleware(memberships.ListAccountsHandler)).Methods(http.MethodGet)
-	r.Handle("/memberships/{membershipID:[0-9]+}/accounts", auth.RequiredMiddleware(memberships.CreateAccountHandler)).Methods(http.MethodPost)
+	r.Handle("/memberships/{membershipID:[0-9]+}/accounts", auth.RequiredMiddleware(memberships.AddAccountHandler)).Methods(http.MethodPost)
 
 	r.Handle("/organizations/{organizationID:[0-9]+}", auth.RequiredMiddleware(organizations.UpdateHandler)).Methods(http.MethodPost)
 	r.Handle("/organizations/{organizationID:[0-9]+}", auth.RequiredMiddleware(organizations.GetHandler)).Methods(http.MethodGet)
@@ -82,6 +82,7 @@ func serve() {
 	r.Handle("/organizations/{organizationID:[0-9]+}/promotions", service.Handler(organizations.ListPromotionsHandler)).Methods(http.MethodGet)
 	r.Handle("/organizations/{organizationID:[0-9]+}/promotions", service.Handler(organizations.CreatePromotionHandler)).Methods(http.MethodPost)
 	r.Handle("/organizations/{organizationID:[0-9]+}/accounts", auth.RequiredMiddleware(organizations.ListAccountsHandler)).Methods(http.MethodGet)
+	r.Handle("/organizations/{organizationID:[0-9]+}/accounts", auth.RequiredMiddleware(organizations.AddAccountHandler)).Methods(http.MethodPost)
 	r.Handle("/organizations/{organizationID:[0-9]+}/logo", auth.RequiredMiddleware(organizations.UploadLogoHandler)).Methods(http.MethodPost)
 
 	r.Handle("/promotions/{promotionID:[0-9]+}/redeem", auth.RequiredMiddleware(promotions.RedeemHandler)).Methods(http.MethodPost)

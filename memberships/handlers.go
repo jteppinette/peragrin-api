@@ -28,9 +28,8 @@ func (c *Config) ListAccountsHandler(r *http.Request) *service.Response {
 	return service.NewResponse(nil, http.StatusOK, accounts)
 }
 
-// CreateAccountHandler creates a new account and connects it to the
-// provided membership.
-func (c *Config) CreateAccountHandler(r *http.Request) *service.Response {
+// AddAccountHandler joins a new or pre-existing account to the provided membership.
+func (c *Config) AddAccountHandler(r *http.Request) *service.Response {
 	account := models.Account{}
 	if err := json.NewDecoder(r.Body).Decode(&account); err != nil {
 		return service.NewResponse(err, http.StatusBadRequest, nil)

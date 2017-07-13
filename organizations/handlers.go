@@ -175,6 +175,45 @@ func (c *Config) ListAccountsHandler(r *http.Request) *service.Response {
 	return service.NewResponse(nil, http.StatusOK, accounts)
 }
 
+// AddAccountHandler joins a new or pre-existing account to the provided organization.
+func (c *Config) AddAccountHandler(r *http.Request) *service.Response {
+	account := models.Account{}
+	if err := json.NewDecoder(r.Body).Decode(&account); err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+
+	organizationID, err := strconv.Atoi(mux.Vars(r)["organizationID"])
+	if err != nil {
+		return service.NewResponse(errors.Wrap(err, errOrganizationIDRequired.Error()), http.StatusBadRequest, nil)
+	}
+
+	// If the account already exists, then simply add the membership to it.
+	if existing, err := models.GetAccountByEmail(account.Email, c.DBClient); err != nil {
+		return service.NewResponse(nil, http.StatusBadRequest, nil)
+	} else if existing != nil {
+		if err := existing.AddOrganization(organizationID, c.DBClient); err != nil {
+			return service.NewResponse(err, http.StatusBadRequest, nil)
+		}
+		return service.NewResponse(nil, http.StatusOK, account)
+	}
+
+	account.Password = ""
+	if err := account.CreateWithOrganization(organizationID, c.DBClient); err != nil {
+		log.WithFields(log.Fields{
+			"email": account.Email, "error": err.Error(), "organizationID": organizationID, "id": r.Header.Get("X-Request-ID"),
+		}).Info(errAccountCreationFailed.Error())
+		return service.NewResponse(errAccountCreationFailed, http.StatusBadRequest, map[string]string{"msg": errAccountCreationFailed.Error()})
+	}
+
+	if err := account.SendAccountActivationEmail(c.AppDomain, c.TokenSecret, c.Clock, c.MailClient); err != nil {
+		log.WithFields(log.Fields{
+			"email": account.Email, "error": err.Error(), "id": r.Header.Get("X-Request-ID"),
+		}).Info(errAccountActivationEmail.Error())
+	}
+
+	return service.NewResponse(nil, http.StatusOK, account)
+}
+
 // JoinCommunityHandler creates a relationship between the given
 // organization and community.
 func (c *Config) JoinCommunityHandler(r *http.Request) *service.Response {

@@ -2,6 +2,7 @@ package auth
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -68,6 +69,8 @@ func TestLoginHandler(t *testing.T) {
 			expected := mock.ExpectQuery("^SELECT (.+) FROM Account WHERE LOWER\\(email\\) = (.+);").WithArgs(creds.Email)
 			if creds.Email == dbAccount.Email {
 				expected.WillReturnRows(sqlmock.NewRows([]string{"id", "email", "password"}).AddRow(dbAccount.ID, dbAccount.Email, dbAccount.Password))
+			} else {
+				expected.WillReturnError(sql.ErrNoRows)
 			}
 		}
 

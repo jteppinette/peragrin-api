@@ -41,6 +41,16 @@ func (c *Config) CreateAccountHandler(r *http.Request) *service.Response {
 		return service.NewResponse(errors.Wrap(err, errMembershipIDRequired.Error()), http.StatusBadRequest, nil)
 	}
 
+	// If the account already exists, then simply add the membership to it.
+	if existing, err := models.GetAccountByEmail(account.Email, c.DBClient); err != nil {
+		return service.NewResponse(nil, http.StatusBadRequest, nil)
+	} else if existing != nil {
+		if err := existing.AddMembership(membershipID, c.DBClient); err != nil {
+			return service.NewResponse(err, http.StatusBadRequest, nil)
+		}
+		return service.NewResponse(nil, http.StatusOK, account)
+	}
+
 	account.Password = ""
 	if err := account.CreateWithMembership(membershipID, c.DBClient); err != nil {
 		log.WithFields(log.Fields{

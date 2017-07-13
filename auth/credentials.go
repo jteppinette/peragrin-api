@@ -14,21 +14,22 @@ type Credentials struct {
 
 // Authenticate retrieves an account object using the provided credentials.
 // If the password hashes validate, then the account will be returned.
-func (creds Credentials) Authenticate(c *Config, requestID string) (models.Account, error) {
+func (creds Credentials) Authenticate(c *Config, requestID string) (*models.Account, error) {
 	account, err := models.GetAccountByEmail(creds.Email, c.DBClient)
 	if err != nil {
-		log.WithFields(log.Fields{
-			"email": creds.Email, "error": err.Error(), "id": requestID,
-		}).Info(errAccountNotFound.Error())
-		return models.Account{}, errAccountNotFound
+		return nil, err
+	}
+	if account == nil {
+		log.WithFields(log.Fields{"email": creds.Email, "id": requestID}).Info(errAccountNotFound.Error())
+		return nil, errAccountNotFound
 	}
 	if err := account.ValidatePassword(creds.Password); err != nil {
 		log.WithFields(log.Fields{
 			"email": creds.Email, "error": err.Error(), "id": requestID,
 		}).Info(errInvalidCredentials.Error())
-		return models.Account{}, errInvalidCredentials
+		return nil, errInvalidCredentials
 	}
 	// Do not allow the hashed password to be returned outside of this function.
 	account.Password = ""
-	return *account, nil
+	return account, nil
 }

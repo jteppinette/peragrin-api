@@ -1,6 +1,7 @@
 package models
 
 import (
+	"database/sql"
 	"fmt"
 	"strings"
 	"time"
@@ -131,7 +132,7 @@ func (a *Account) CreateWithMembership(membershipID int, client *sqlx.DB) error 
 		return err
 	}
 
-	_, err = tx.Exec("INSERT INTO AccountMembership (accountID, membershipID) VALUES ($1, $2) RETURNING *;", a.ID, membershipID)
+	_, err = tx.Exec("INSERT INTO AccountMembership (accountID, membershipID) VALUES ($1, $2);", a.ID, membershipID)
 	if err != nil {
 		return err
 	}
@@ -139,11 +140,21 @@ func (a *Account) CreateWithMembership(membershipID int, client *sqlx.DB) error 
 	return nil
 }
 
+// AddMembership adds a new membership to the given account.
+func (a *Account) AddMembership(membershipID int, client *sqlx.DB) error {
+	if _, err := client.Exec("INSERT INTO AccountMembership (accountID, membershipID) VALUES ($1, $2);", a.ID, membershipID); err != nil {
+		return err
+	}
+	return nil
+}
+
 // GetAccountByEmail returns the account in the database that matches the provided
 // email address. If there is not matching account, then an error is returned.
 func GetAccountByEmail(email string, client *sqlx.DB) (*Account, error) {
 	a := &Account{}
-	if err := client.Get(a, "SELECT * FROM Account WHERE LOWER(email) = $1;", strings.ToLower(email)); err != nil {
+	if err := client.Get(a, "SELECT * FROM Account WHERE LOWER(email) = $1;", strings.ToLower(email)); err == sql.ErrNoRows {
+		return nil, nil
+	} else if err != nil {
 		return nil, err
 	}
 	return a, nil

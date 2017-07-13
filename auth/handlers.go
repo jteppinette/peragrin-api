@@ -62,17 +62,20 @@ func (c *Config) ForgotPasswordHandler(r *http.Request) *service.Response {
 
 	account, err := models.GetAccountByEmail(form.Email, c.DBClient)
 	if err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+	if account == nil {
 		// We don't want to allow account enumeration, so we are just goign to
 		// log the error and return the success response.
 		log.WithFields(log.Fields{
 			"email": form.Email,
 		}).Info(errAccountNotFound.Error())
+		return service.NewResponse(nil, http.StatusOK, nil)
 	}
 
 	if err := account.SendResetPasswordEmail(c.AppDomain, c.TokenSecret, c.Clock, c.MailClient); err != nil {
 		return service.NewResponse(err, http.StatusInternalServerError, nil)
 	}
-
 	return service.NewResponse(nil, http.StatusOK, nil)
 }
 
@@ -191,7 +194,7 @@ func (c *Config) RequiredMiddleware(h service.Handler) service.Handler {
 			return service.NewResponse(errAuthenticationRequired, http.StatusUnauthorized, nil)
 		}
 
-		var account models.Account
+		var account *models.Account
 		if strings.HasPrefix(authorization, "Bearer ") {
 			token, err := jwt.ParseWithClaims(strings.Split(authorization, " ")[1], &models.AuthTokenClaims{}, func(token *jwt.Token) (interface{}, error) {
 				return []byte(c.TokenSecret), nil
@@ -199,7 +202,7 @@ func (c *Config) RequiredMiddleware(h service.Handler) service.Handler {
 			if err != nil {
 				return service.NewResponse(errors.Wrap(err, errJWTAuth.Error()), http.StatusUnauthorized, nil)
 			}
-			account = token.Claims.(*models.AuthTokenClaims).Account
+			account = &token.Claims.(*models.AuthTokenClaims).Account
 		} else if strings.HasPrefix(authorization, "Basic ") {
 			email, password, ok := r.BasicAuth()
 			if !ok {
@@ -214,7 +217,7 @@ func (c *Config) RequiredMiddleware(h service.Handler) service.Handler {
 			return service.NewResponse(errAuthenticationStrategyNotSupported, http.StatusUnauthorized, nil)
 		}
 
-		context.Set(r, "account", account)
+		context.Set(r, "account", *account)
 		return h(r)
 	}
 }

@@ -13,6 +13,45 @@ import (
 	"gitlab.com/peragrin/api/service"
 )
 
+// GetHandler generates a response with the requested membership.
+func (c *Config) GetHandler(r *http.Request) *service.Response {
+	id, err := strconv.Atoi(mux.Vars(r)["membershipID"])
+	if err != nil {
+		return service.NewResponse(errors.Wrap(err, errMembershipIDRequired.Error()), http.StatusBadRequest, nil)
+	}
+
+	membership, err := models.GetMembershipByID(id, c.DBClient)
+	if err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+
+	if membership == nil {
+		return service.NewResponse(nil, http.StatusNotFound, nil)
+	}
+
+	return service.NewResponse(nil, http.StatusOK, membership)
+}
+
+// UpdateHandler updates the provided membership.
+func (c *Config) UpdateHandler(r *http.Request) *service.Response {
+	id, err := strconv.Atoi(mux.Vars(r)["membershipID"])
+	if err != nil {
+		return service.NewResponse(errors.Wrap(err, errMembershipIDRequired.Error()), http.StatusBadRequest, nil)
+	}
+
+	membership := models.Membership{}
+	if err := json.NewDecoder(r.Body).Decode(&membership); err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+
+	membership.ID = id
+	if err := membership.Update(c.DBClient); err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+
+	return service.NewResponse(nil, http.StatusOK, membership)
+}
+
 // ListAccountsHandler returns a response with all accounts that are
 // have the provided membership.
 func (c *Config) ListAccountsHandler(r *http.Request) *service.Response {

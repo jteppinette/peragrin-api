@@ -119,7 +119,7 @@ func (c *Config) CreateMembershipHandler(r *http.Request) *service.Response {
 		return service.NewResponse(errors.Wrap(err, errCommunityIDRequired.Error()), http.StatusBadRequest, nil)
 	}
 
-	if err := membership.Save(communityID, c.DBClient); err != nil {
+	if err := membership.Create(communityID, c.DBClient); err != nil {
 		return service.NewResponse(err, http.StatusBadRequest, nil)
 	}
 	return service.NewResponse(nil, http.StatusCreated, membership)

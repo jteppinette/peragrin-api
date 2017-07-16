@@ -186,7 +186,7 @@ func (a *Account) AddOrganization(organizationID int, client *sqlx.DB) error {
 }
 
 // GetAccountByEmail returns the account in the database that matches the provided
-// email address. If there is not matching account, then an error is returned.
+// email address.
 func GetAccountByEmail(email string, client *sqlx.DB) (*Account, error) {
 	a := &Account{}
 	if err := client.Get(a, "SELECT * FROM Account WHERE LOWER(email) = $1;", strings.ToLower(email)); err == sql.ErrNoRows {

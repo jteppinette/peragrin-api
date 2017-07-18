@@ -205,6 +205,18 @@ func GetAccountByEmail(email string, client *sqlx.DB) (*Account, error) {
 	return a, nil
 }
 
+// GetAccountByID returns the account in the database that matches the provided
+// id.
+func GetAccountByID(id int, client *sqlx.DB) (*Account, error) {
+	a := &Account{}
+	if err := client.Get(a, "SELECT * FROM Account WHERE id = $1;", id); err == sql.ErrNoRows {
+		return nil, nil
+	} else if err != nil {
+		return nil, err
+	}
+	return a, nil
+}
+
 // GetAccountsByMembership returns all accounts with the provided membership.
 func GetAccountsByMembership(membershipID int, client *sqlx.DB) (Accounts, error) {
 	accounts := Accounts{}

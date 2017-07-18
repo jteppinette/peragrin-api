@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"gitlab.com/peragrin/api/accounts"
 	"gitlab.com/peragrin/api/auth"
 	"gitlab.com/peragrin/api/communities"
 	"gitlab.com/peragrin/api/db"
@@ -46,6 +47,7 @@ func serve() {
 	}
 
 	auth := auth.Init(dbClient, storeClient, mailClient, clock{}, viper.GetString("TOKEN_SECRET"), viper.GetString("LOCATIONIQ_API_KEY"), viper.GetString("APP_DOMAIN"))
+	accounts := accounts.Init(dbClient, mailClient, clock{}, viper.GetString("TOKEN_SECRET"), viper.GetString("APP_DOMAIN"))
 	organizations := organizations.Init(dbClient, storeClient, mailClient, clock{}, viper.GetString("TOKEN_SECRET"), viper.GetString("APP_DOMAIN"), viper.GetString("LOCATIONIQ_API_KEY"))
 	communities := communities.Init(dbClient, storeClient, viper.GetString("LOCATIONIQ_API_KEY"))
 	memberships := memberships.Init(dbClient, mailClient, clock{}, viper.GetString("TOKEN_SECRET"), viper.GetString("APP_DOMAIN"))
@@ -59,6 +61,8 @@ func serve() {
 	r.Handle("/auth/account", auth.RequiredMiddleware(auth.UpdateAccountHandler)).Methods(http.MethodPut)
 	r.Handle("/auth/organizations", auth.RequiredMiddleware(auth.ListOrganizationsHandler)).Methods(http.MethodGet)
 	r.Handle("/auth/organizations", auth.RequiredMiddleware(auth.CreateOrganizationHandler)).Methods(http.MethodPost)
+
+	r.Handle("/accounts/{accountID:[0-9]+}/forgot-password", service.Handler(accounts.ForgotPasswordHandler)).Methods(http.MethodPost)
 
 	r.Handle("/communities", service.Handler(communities.ListHandler))
 	r.Handle("/communities/{communityID:[0-9]+}", service.Handler(communities.GetHandler)).Methods(http.MethodGet)

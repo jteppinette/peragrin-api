@@ -71,6 +71,7 @@ func serve() {
 
 	r.Handle("/memberships/{membershipID:[0-9]+}", auth.RequiredMiddleware(memberships.GetHandler)).Methods(http.MethodGet)
 	r.Handle("/memberships/{membershipID:[0-9]+}", auth.RequiredMiddleware(memberships.UpdateHandler)).Methods(http.MethodPut)
+	r.Handle("/memberships/{membershipID:[0-9]+}", auth.RequiredMiddleware(memberships.DeleteHandler)).Methods(http.MethodDelete)
 	r.Handle("/memberships/{membershipID:[0-9]+}/accounts", auth.RequiredMiddleware(memberships.ListAccountsHandler)).Methods(http.MethodGet)
 	r.Handle("/memberships/{membershipID:[0-9]+}/accounts", auth.RequiredMiddleware(memberships.AddAccountHandler)).Methods(http.MethodPost)
 

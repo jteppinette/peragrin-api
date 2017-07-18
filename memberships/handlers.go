@@ -105,3 +105,16 @@ func (c *Config) AddAccountHandler(r *http.Request) *service.Response {
 
 	return service.NewResponse(nil, http.StatusOK, account)
 }
+
+// DeleteHandler deletes a membership.
+func (c *Config) DeleteHandler(r *http.Request) *service.Response {
+	id, err := strconv.Atoi(mux.Vars(r)["membershipID"])
+	if err != nil {
+		return service.NewResponse(errors.Wrap(err, errMembershipIDRequired.Error()), http.StatusBadRequest, nil)
+	}
+
+	if err := models.DeleteMembership(id, c.DBClient); err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+	return service.NewResponse(nil, http.StatusOK, nil)
+}

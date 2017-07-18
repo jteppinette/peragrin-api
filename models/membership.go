@@ -43,3 +43,12 @@ func GetMembershipByID(membershipID int, client *sqlx.DB) (*Membership, error) {
 	}
 	return m, nil
 }
+
+// DeleteMembership removes a membership from the database.
+func DeleteMembership(id int, client *sqlx.DB) error {
+	_, err := client.Exec("DELETE FROM Membership WHERE id = $1;", id)
+	if err != nil {
+		return err
+	}
+	return nil
+}

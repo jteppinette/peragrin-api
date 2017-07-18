@@ -46,7 +46,7 @@ func serve() {
 	}
 
 	auth := auth.Init(dbClient, storeClient, mailClient, clock{}, viper.GetString("TOKEN_SECRET"), viper.GetString("LOCATIONIQ_API_KEY"), viper.GetString("APP_DOMAIN"))
-	organizations := organizations.Init(dbClient, storeClient, mailClient, clock{}, viper.GetString("TOKEN_SECRET"), viper.GetString("APP_DOMAIN"))
+	organizations := organizations.Init(dbClient, storeClient, mailClient, clock{}, viper.GetString("TOKEN_SECRET"), viper.GetString("APP_DOMAIN"), viper.GetString("LOCATIONIQ_API_KEY"))
 	communities := communities.Init(dbClient, storeClient, viper.GetString("LOCATIONIQ_API_KEY"))
 	memberships := memberships.Init(dbClient, mailClient, clock{}, viper.GetString("TOKEN_SECRET"), viper.GetString("APP_DOMAIN"))
 	promotions := promotions.Init(dbClient)
@@ -56,7 +56,7 @@ func serve() {
 	r.Handle("/auth/register", service.Handler(auth.RegisterHandler))
 	r.Handle("/auth/forgot-password", service.Handler(auth.ForgotPasswordHandler))
 	r.Handle("/auth/account", auth.RequiredMiddleware(auth.GetAccountHandler)).Methods(http.MethodGet)
-	r.Handle("/auth/account", auth.RequiredMiddleware(auth.UpdateAccountHandler)).Methods(http.MethodPost)
+	r.Handle("/auth/account", auth.RequiredMiddleware(auth.UpdateAccountHandler)).Methods(http.MethodPut)
 	r.Handle("/auth/organizations", auth.RequiredMiddleware(auth.ListOrganizationsHandler)).Methods(http.MethodGet)
 	r.Handle("/auth/organizations", auth.RequiredMiddleware(auth.CreateOrganizationHandler)).Methods(http.MethodPost)
 
@@ -70,11 +70,11 @@ func serve() {
 	r.Handle("/communities/{communityID:[0-9]+}/memberships", service.Handler(communities.CreateMembershipHandler)).Methods(http.MethodPost)
 
 	r.Handle("/memberships/{membershipID:[0-9]+}", auth.RequiredMiddleware(memberships.GetHandler)).Methods(http.MethodGet)
-	r.Handle("/memberships/{membershipID:[0-9]+}", auth.RequiredMiddleware(memberships.UpdateHandler)).Methods(http.MethodPost)
+	r.Handle("/memberships/{membershipID:[0-9]+}", auth.RequiredMiddleware(memberships.UpdateHandler)).Methods(http.MethodPut)
 	r.Handle("/memberships/{membershipID:[0-9]+}/accounts", auth.RequiredMiddleware(memberships.ListAccountsHandler)).Methods(http.MethodGet)
 	r.Handle("/memberships/{membershipID:[0-9]+}/accounts", auth.RequiredMiddleware(memberships.AddAccountHandler)).Methods(http.MethodPost)
 
-	r.Handle("/organizations/{organizationID:[0-9]+}", auth.RequiredMiddleware(organizations.UpdateHandler)).Methods(http.MethodPost)
+	r.Handle("/organizations/{organizationID:[0-9]+}", auth.RequiredMiddleware(organizations.UpdateHandler)).Methods(http.MethodPut)
 	r.Handle("/organizations/{organizationID:[0-9]+}", auth.RequiredMiddleware(organizations.GetHandler)).Methods(http.MethodGet)
 	r.Handle("/organizations/{organizationID:[0-9]+}/communities", auth.RequiredMiddleware(organizations.ListCommunitiesHandler)).Methods(http.MethodGet)
 	r.Handle("/organizations/{organizationID:[0-9]+}/communities", auth.RequiredMiddleware(organizations.CreateCommunityHandler)).Methods(http.MethodPost)

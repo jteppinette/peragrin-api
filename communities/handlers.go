@@ -75,13 +75,10 @@ func (c *Config) CreateOrganizationHandler(r *http.Request) *service.Response {
 	// will just let the user manually enter the coordinates.
 	if err := organization.SetGeo(c.LocationIQAPIKey); err != nil {
 		log.WithFields(log.Fields{
-			"street":  organization.Street,
-			"city":    organization.City,
-			"state":   organization.State,
-			"country": organization.Country,
-			"zip":     organization.Zip,
-			"error":   err.Error(),
-		}).Info(errGeocodeFailed.Error())
+			"street": organization.Street, "city": organization.City, "state": organization.State, "country": organization.Country, "zip": organization.Zip,
+			"error": err.Error(),
+			"id":    r.Header.Get("X-Request-ID"),
+		}).Info(errGeocode.Error())
 	}
 
 	if err := organization.CreateWithCommunity(communityID, c.DBClient); err != nil {

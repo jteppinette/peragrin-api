@@ -93,8 +93,8 @@ func (c *Config) AddAccountHandler(r *http.Request) *service.Response {
 	if err := account.CreateWithMembership(membershipID, c.DBClient); err != nil {
 		log.WithFields(log.Fields{
 			"email": account.Email, "error": err.Error(), "membershipID": membershipID, "id": r.Header.Get("X-Request-ID"),
-		}).Info(errAccountCreationFailed.Error())
-		return service.NewResponse(errAccountCreationFailed, http.StatusBadRequest, map[string]string{"msg": errAccountCreationFailed.Error()})
+		}).Info(errAccountCreation.Error())
+		return service.NewResponse(errAccountCreation, http.StatusBadRequest, map[string]string{"msg": errAccountCreation.Error()})
 	}
 
 	if err := account.SendAccountActivationEmail(c.AppDomain, c.TokenSecret, c.Clock, c.MailClient); err != nil {

@@ -118,12 +118,9 @@ func (c *Config) CreateOrganizationHandler(r *http.Request) *service.Response {
 	// will just let the user manually enter the coordinates.
 	if err := organization.SetGeo(c.LocationIQAPIKey); err != nil {
 		log.WithFields(log.Fields{
-			"street":  organization.Street,
-			"city":    organization.City,
-			"state":   organization.State,
-			"country": organization.Country,
-			"zip":     organization.Zip,
-			"error":   err.Error(),
+			"street": organization.Street, "city": organization.City, "state": organization.State, "country": organization.Country, "zip": organization.Zip,
+			"error": err.Error(),
+			"id":    r.Header.Get("X-Request-ID"),
 		}).Info(errGeocode.Error())
 	}
 
@@ -169,8 +166,8 @@ func (c *Config) RegisterHandler(r *http.Request) *service.Response {
 	if err := a.Save(c.DBClient); err != nil {
 		log.WithFields(log.Fields{
 			"email": creds.Email, "error": err.Error(), "id": r.Header.Get("X-Request-ID"),
-		}).Info(errRegistrationFailed.Error())
-		return service.NewResponse(errRegistrationFailed, http.StatusBadRequest, map[string]string{"msg": errRegistrationFailed.Error()})
+		}).Info(errRegistration.Error())
+		return service.NewResponse(errRegistration, http.StatusBadRequest, map[string]string{"msg": errRegistration.Error()})
 	}
 
 	str, err := a.AuthToken(c.TokenSecret, c.Clock, time.Hour*24)

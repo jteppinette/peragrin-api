@@ -8,8 +8,7 @@ var (
 	errAccountNotFound                    = errors.New("account not found")
 	errAuthenticationRequired             = errors.New("authentication required")
 	errAuthenticationStrategyNotSupported = errors.New("authentication strategy not supported")
-	errRegistrationFailed                 = errors.New("registration failed")
-	errGeocodeFailed                      = errors.New("geocode failed")
+	errRegistration                       = errors.New("registration")
 
 	errCreateOrganization = errors.New("create organization")
 	errGeocode            = errors.New("geocode")

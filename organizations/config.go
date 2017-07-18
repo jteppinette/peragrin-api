@@ -10,16 +10,17 @@ import (
 // Config represents the configuration objects necessary to
 // use the objects in this package.
 type Config struct {
-	DBClient    *sqlx.DB
-	StoreClient *minio.Client
-	MailClient  *gochimp.MandrillAPI
-	Clock       models.Timer
-	TokenSecret string
-	AppDomain   string
+	DBClient         *sqlx.DB
+	StoreClient      *minio.Client
+	MailClient       *gochimp.MandrillAPI
+	Clock            models.Timer
+	TokenSecret      string
+	AppDomain        string
+	LocationIQAPIKey string
 }
 
 // Init returns a configuration struct that can be used to initialize
 // the objects in this package.
-func Init(dbClient *sqlx.DB, storeClient *minio.Client, mailClient *gochimp.MandrillAPI, clock models.Timer, tokenSecret, appDomain string) *Config {
-	return &Config{dbClient, storeClient, mailClient, clock, tokenSecret, appDomain}
+func Init(dbClient *sqlx.DB, storeClient *minio.Client, mailClient *gochimp.MandrillAPI, clock models.Timer, tokenSecret, appDomain, locationIQAPIKey string) *Config {
+	return &Config{dbClient, storeClient, mailClient, clock, tokenSecret, appDomain, locationIQAPIKey}
 }

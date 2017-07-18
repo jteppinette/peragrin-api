@@ -177,6 +177,14 @@ func (a *Account) AddMembership(membershipID int, client *sqlx.DB) error {
 	return nil
 }
 
+// RemoveMembership removes a membership from the given account.
+func (a *Account) RemoveMembership(membershipID int, client *sqlx.DB) error {
+	if _, err := client.Exec("DELETE FROM AccountMembership WHERE accountID = $1 AND membershipID = $2;", a.ID, membershipID); err != nil {
+		return err
+	}
+	return nil
+}
+
 // AddOrganization adds a new organization to the given account.
 func (a *Account) AddOrganization(organizationID int, client *sqlx.DB) error {
 	if _, err := client.Exec("INSERT INTO AccountOrganization (accountID, organizationID) VALUES ($1, $2);", a.ID, organizationID); err != nil {

@@ -118,3 +118,22 @@ func (c *Config) DeleteHandler(r *http.Request) *service.Response {
 	}
 	return service.NewResponse(nil, http.StatusOK, nil)
 }
+
+// RemoveAccountHandler removes the account - membership relationship for the provided resources.
+func (c *Config) RemoveAccountHandler(r *http.Request) *service.Response {
+	membershipID, err := strconv.Atoi(mux.Vars(r)["membershipID"])
+	if err != nil {
+		return service.NewResponse(errors.Wrap(err, errMembershipIDRequired.Error()), http.StatusBadRequest, nil)
+	}
+	accountID, err := strconv.Atoi(mux.Vars(r)["accountID"])
+	if err != nil {
+		return service.NewResponse(errors.Wrap(err, errAccountIDRequired.Error()), http.StatusBadRequest, nil)
+	}
+
+	account := models.Account{ID: accountID}
+	if err := account.RemoveMembership(membershipID, c.DBClient); err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+
+	return service.NewResponse(nil, http.StatusNoContent, nil)
+}

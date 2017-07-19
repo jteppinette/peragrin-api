@@ -22,12 +22,6 @@ import (
 	"gitlab.com/peragrin/api/service"
 )
 
-type clock struct{}
-
-func (clock) Now() time.Time {
-	return time.Now()
-}
-
 func serve() {
 	log.SetFormatter(&log.JSONFormatter{})
 
@@ -46,23 +40,24 @@ func serve() {
 		log.Fatal(err)
 	}
 
-	auth := auth.Init(dbClient, storeClient, mailClient, clock{}, viper.GetString("TOKEN_SECRET"), viper.GetString("LOCATIONIQ_API_KEY"), viper.GetString("APP_DOMAIN"))
-	accounts := accounts.Init(dbClient, mailClient, clock{}, viper.GetString("TOKEN_SECRET"), viper.GetString("APP_DOMAIN"))
-	organizations := organizations.Init(dbClient, storeClient, mailClient, clock{}, viper.GetString("TOKEN_SECRET"), viper.GetString("APP_DOMAIN"), viper.GetString("LOCATIONIQ_API_KEY"))
+	auth := auth.Init(dbClient, mailClient, viper.GetString("TOKEN_SECRET"), viper.GetString("APP_DOMAIN"))
+	accounts := accounts.Init(dbClient, storeClient, mailClient, viper.GetString("TOKEN_SECRET"), viper.GetString("APP_DOMAIN"), viper.GetString("LOCATIONIQ_API_KEY"))
+	organizations := organizations.Init(dbClient, storeClient, mailClient, viper.GetString("TOKEN_SECRET"), viper.GetString("APP_DOMAIN"), viper.GetString("LOCATIONIQ_API_KEY"))
 	communities := communities.Init(dbClient, storeClient, viper.GetString("LOCATIONIQ_API_KEY"))
-	memberships := memberships.Init(dbClient, mailClient, clock{}, viper.GetString("TOKEN_SECRET"), viper.GetString("APP_DOMAIN"))
+	memberships := memberships.Init(dbClient, mailClient, viper.GetString("TOKEN_SECRET"), viper.GetString("APP_DOMAIN"))
 	promotions := promotions.Init(dbClient)
 
 	r := mux.NewRouter()
-	r.Handle("/auth/login", service.Handler(auth.LoginHandler))
-	r.Handle("/auth/register", service.Handler(auth.RegisterHandler))
-	r.Handle("/auth/forgot-password", service.Handler(auth.ForgotPasswordHandler))
-	r.Handle("/auth/account", auth.RequiredMiddleware(auth.GetAccountHandler)).Methods(http.MethodGet)
-	r.Handle("/auth/account", auth.RequiredMiddleware(auth.UpdateAccountHandler)).Methods(http.MethodPut)
-	r.Handle("/auth/organizations", auth.RequiredMiddleware(auth.ListOrganizationsHandler)).Methods(http.MethodGet)
-	r.Handle("/auth/organizations", auth.RequiredMiddleware(auth.CreateOrganizationHandler)).Methods(http.MethodPost)
+	r.Handle("/auth/login", service.Handler(auth.LoginHandler)).Methods(http.MethodPost)
+	r.Handle("/auth/register", service.Handler(auth.RegisterHandler)).Methods(http.MethodPost)
+	r.Handle("/auth/forgot-password", service.Handler(auth.ForgotPasswordHandler)).Methods(http.MethodPost)
+	r.Handle("/auth/set-password", auth.RequiredMiddleware(auth.SetPasswordHandler)).Methods(http.MethodPost)
+	r.Handle("/auth/activate", auth.RequiredMiddleware(auth.ActivateHandler)).Methods(http.MethodPost)
 
-	r.Handle("/accounts/{accountID:[0-9]+}/forgot-password", service.Handler(accounts.ForgotPasswordHandler)).Methods(http.MethodPost)
+	r.Handle("/accounts/{accountID:[0-9]+}", auth.RequiredMiddleware(accounts.UpdateAccountHandler)).Methods(http.MethodPut)
+	r.Handle("/accounts/{accountID:[0-9]+}/forgot-password", auth.RequiredMiddleware(accounts.ForgotPasswordHandler)).Methods(http.MethodPost)
+	r.Handle("/accounts/{accountID:[0-9]+}/organizations", auth.RequiredMiddleware(accounts.ListOrganizationsHandler)).Methods(http.MethodGet)
+	r.Handle("/accounts/{accountID:[0-9]+}/organizations", auth.RequiredMiddleware(accounts.CreateOrganizationHandler)).Methods(http.MethodPost)
 
 	r.Handle("/communities", service.Handler(communities.ListHandler))
 	r.Handle("/communities/{communityID:[0-9]+}", service.Handler(communities.GetHandler)).Methods(http.MethodGet)

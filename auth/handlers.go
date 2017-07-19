@@ -14,40 +14,50 @@ import (
 	"gitlab.com/peragrin/api/service"
 )
 
-// GetAccountHandler returns the currently authenticated account. To function properly,
-// a preceding middleware must add the "account" key to the request context.
-func (c *Config) GetAccountHandler(r *http.Request) *service.Response {
-	if account, ok := context.GetOk(r, "account"); ok {
-		return service.NewResponse(nil, http.StatusOK, account)
-	}
-	return service.NewResponse(errAuthenticationRequired, http.StatusUnauthorized, nil)
-}
-
-// UpdateAccountHandler updates the email and password for an account.
-func (c *Config) UpdateAccountHandler(r *http.Request) *service.Response {
-	creds := Credentials{}
-	if err := json.NewDecoder(r.Body).Decode(&creds); err != nil {
-		return service.NewResponse(err, http.StatusBadRequest, nil)
-	}
-
+// SetPasswordHandler allows an authenticated user to set a new password.
+func (c *Config) SetPasswordHandler(r *http.Request) *service.Response {
 	account, ok := context.Get(r, "account").(models.Account)
 	if !ok {
 		return service.NewResponse(errAuthenticationRequired, http.StatusUnauthorized, nil)
 	}
-
-	if creds.Email != "" {
-		account.Email = creds.Email
-	}
-
-	if creds.Password != "" {
-		account.SetPassword(creds.Password)
-	}
-
-	if err := account.Save(c.DBClient); err != nil {
+	form := struct {
+		Password string `json:"password"`
+	}{}
+	if err := json.NewDecoder(r.Body).Decode(&form); err != nil {
 		return service.NewResponse(err, http.StatusBadRequest, nil)
 	}
 
-	return service.NewResponse(nil, http.StatusOK, account)
+	if err := account.SetPassword(form.Password, c.DBClient); err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+	return service.NewResponse(nil, http.StatusOK, nil)
+}
+
+// ActivateHandler allows an authenticated user to set a new password.
+func (c *Config) ActivateHandler(r *http.Request) *service.Response {
+	account, ok := context.Get(r, "account").(models.Account)
+	if !ok {
+		return service.NewResponse(errAuthenticationRequired, http.StatusUnauthorized, nil)
+	}
+	form := struct {
+		Password string `json:"password"`
+	}{}
+	if err := json.NewDecoder(r.Body).Decode(&form); err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+
+	if err := account.SetPassword(form.Password, c.DBClient); err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+
+	str, err := account.AuthToken(c.TokenSecret, time.Hour*24)
+	if err != nil {
+		return service.NewResponse(err, http.StatusUnauthorized, map[string]string{"msg": err.Error()})
+	}
+
+	return service.NewResponse(nil, http.StatusOK, struct {
+		Token string `json:"token"`
+	}{str})
 }
 
 // ForgotPasswordHandler generates a token that can be used to reset the password
@@ -73,78 +83,27 @@ func (c *Config) ForgotPasswordHandler(r *http.Request) *service.Response {
 		return service.NewResponse(nil, http.StatusOK, nil)
 	}
 
-	if err := account.SendResetPasswordEmail(c.AppDomain, c.TokenSecret, c.Clock, c.MailClient); err != nil {
+	if err := account.SendResetPasswordEmail(c.AppDomain, c.TokenSecret, c.MailClient); err != nil {
 		return service.NewResponse(err, http.StatusInternalServerError, nil)
 	}
 	return service.NewResponse(nil, http.StatusOK, nil)
-}
-
-// ListOrganizationsHandler generates a response object containing the organizations that are
-// operated by the currently authenticated account.
-func (c *Config) ListOrganizationsHandler(r *http.Request) *service.Response {
-	account, ok := context.Get(r, "account").(models.Account)
-	if !ok {
-		return service.NewResponse(errAuthenticationRequired, http.StatusUnauthorized, nil)
-	}
-
-	organizations, err := models.GetOrganizationsByAccount(account.ID, c.DBClient)
-	if err != nil {
-		return service.NewResponse(err, http.StatusBadRequest, nil)
-	}
-
-	// TODO: Mock out the static store.
-	if c.StoreClient != nil {
-		if err := organizations.SetPresignedLogoLinks(c.StoreClient); err != nil {
-			return service.NewResponse(err, http.StatusBadRequest, nil)
-		}
-	}
-
-	return service.NewResponse(nil, http.StatusOK, organizations)
-}
-
-// CreateOrganizationHandler saves a new organization to the database.
-func (c *Config) CreateOrganizationHandler(r *http.Request) *service.Response {
-	account, ok := context.Get(r, "account").(models.Account)
-	if !ok {
-		return service.NewResponse(errAuthenticationRequired, http.StatusUnauthorized, nil)
-	}
-
-	organization := models.Organization{}
-	if err := json.NewDecoder(r.Body).Decode(&organization); err != nil {
-		return service.NewResponse(err, http.StatusBadRequest, nil)
-	}
-
-	// If there is a geocode lookup failure, then log the failure. We
-	// will just let the user manually enter the coordinates.
-	if err := organization.SetGeo(c.LocationIQAPIKey); err != nil {
-		log.WithFields(log.Fields{
-			"street": organization.Street, "city": organization.City, "state": organization.State, "country": organization.Country, "zip": organization.Zip,
-			"error": err.Error(),
-			"id":    r.Header.Get("X-Request-ID"),
-		}).Info(errGeocode.Error())
-	}
-
-	if err := organization.CreateWithAccount(account.ID, c.DBClient); err != nil {
-		return service.NewResponse(errors.Wrap(err, errCreateOrganization.Error()), http.StatusBadRequest, nil)
-	}
-	return service.NewResponse(nil, http.StatusCreated, organization)
 }
 
 // LoginHandler reads a JSON encoded email and password from the provided request
 // and attempts to authenticate these credentials.
 // If succesful, a token object will be returned to the client.
 func (c *Config) LoginHandler(r *http.Request) *service.Response {
-	creds := Credentials{}
+	creds := models.Credentials{}
 	if err := json.NewDecoder(r.Body).Decode(&creds); err != nil {
 		return service.NewResponse(errors.Wrap(err, errBadCredentialsFormat.Error()), http.StatusBadRequest, nil)
 	}
 
-	account, err := creds.Authenticate(c, r.Header.Get("X-Request-ID"))
+	account, err := creds.Authenticate(c.DBClient)
 	if err != nil {
-		return service.NewResponse(err, http.StatusUnauthorized, map[string]string{"msg": err.Error()})
+		return service.NewResponse(err, http.StatusUnauthorized, nil)
 	}
 
-	str, err := account.AuthToken(c.TokenSecret, c.Clock, time.Hour*24)
+	str, err := account.AuthToken(c.TokenSecret, time.Hour*24)
 	if err != nil {
 		return service.NewResponse(err, http.StatusUnauthorized, map[string]string{"msg": err.Error()})
 	}
@@ -156,28 +115,38 @@ func (c *Config) LoginHandler(r *http.Request) *service.Response {
 
 // RegisterHandler creates a new account and returns a account object.
 func (c *Config) RegisterHandler(r *http.Request) *service.Response {
-	creds := Credentials{}
-	if err := json.NewDecoder(r.Body).Decode(&creds); err != nil {
-		return service.NewResponse(errors.Wrap(err, errBadCredentialsFormat.Error()), http.StatusBadRequest, nil)
+	account := models.Account{}
+	if err := json.NewDecoder(r.Body).Decode(&account); err != nil {
+		return service.NewResponse(nil, http.StatusBadRequest, nil)
 	}
 
-	a := models.Account{Email: creds.Email}
-	a.SetPassword(creds.Password)
-	if err := a.Save(c.DBClient); err != nil {
-		log.WithFields(log.Fields{
-			"email": creds.Email, "error": err.Error(), "id": r.Header.Get("X-Request-ID"),
-		}).Info(errRegistration.Error())
-		return service.NewResponse(errRegistration, http.StatusBadRequest, map[string]string{"msg": errRegistration.Error()})
-	}
-
-	str, err := a.AuthToken(c.TokenSecret, c.Clock, time.Hour*24)
-	if err != nil {
+	// If the account already existing then simply return an HTTP 200.
+	if existing, err := models.GetAccountByEmail(account.Email, c.DBClient); err != nil {
 		return service.NewResponse(err, http.StatusBadRequest, nil)
+	} else if existing != nil {
+		log.WithFields(log.Fields{
+			"email":     existing.Email,
+			"accountID": existing.ID,
+		}).Info("registration: account already exists")
+		return service.NewResponse(nil, http.StatusOK, nil)
 	}
 
-	return service.NewResponse(nil, http.StatusOK, struct {
-		Token string `json:"token"`
-	}{str})
+	// If an error occurs while creating this new account, return a standard HTTP 200.
+	// This is to prevent any account enumeration.
+	if err := account.Save(c.DBClient); err != nil {
+		log.WithFields(log.Fields{
+			"email": account.Email, "error": err.Error(), "id": r.Header.Get("X-Request-ID"),
+		}).Info(errRegistration.Error())
+		return service.NewResponse(nil, http.StatusOK, nil)
+	}
+
+	if err := account.SendActivationEmail("", c.AppDomain, c.TokenSecret, c.MailClient); err != nil {
+		log.WithFields(log.Fields{
+			"email": account.Email, "error": err.Error(), "id": r.Header.Get("X-Request-ID"),
+		}).Info(errAccountActivationEmail.Error())
+	}
+
+	return service.NewResponse(nil, http.StatusOK, nil)
 }
 
 // RequiredMiddleware attempts to authenticate the incoming request using
@@ -206,7 +175,8 @@ func (c *Config) RequiredMiddleware(h service.Handler) service.Handler {
 				return service.NewResponse(errors.Wrap(errBadCredentialsFormat, errBasicAuth.Error()), http.StatusBadRequest, nil)
 			}
 			var err error
-			account, err = Credentials{email, password}.Authenticate(c, r.Header.Get("X-Request-ID"))
+			credentials := &models.Credentials{models.Account{Email: email}, password}
+			account, err = credentials.Authenticate(c.DBClient)
 			if err != nil {
 				return service.NewResponse(errors.Wrap(err, errBasicAuth.Error()), http.StatusUnauthorized, nil)
 			}

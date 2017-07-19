@@ -17,54 +17,45 @@ type Accounts []Account
 
 // Account represents an entity that can login into the Peragrin system.
 type Account struct {
-	ID       int    `json:"id"`
-	Email    string `json:"email"`
-	Password string `json:"-"`
-}
-
-// ValidatePassword compares the given password to the password hash
-// that is in the receiving account struct.
-func (a *Account) ValidatePassword(password string) error {
-	return bcrypt.CompareHashAndPassword([]byte(a.Password), []byte(password))
-}
-
-// SetPassword generates a password hash using the bcrypt algorithm.
-// This hash is then stored on the receiving account struct in the password field.
-func (a *Account) SetPassword(password string) error {
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		return err
-	}
-	a.Password = string(hash)
-	return nil
+	ID    int    `json:"id"`
+	Email string `json:"email"`
 }
 
 // Save creates or updates the given account in the database.
 func (a *Account) Save(client *sqlx.DB) error {
 	if a.ID != 0 {
-		return client.Get(a, "UPDATE Account SET email = $2, password = $3 WHERE id = $1 RETURNING *;", a.ID, a.Email, a.Password)
+		return client.Get(a, "UPDATE Account SET email = $2 WHERE id = $1 RETURNING id, email;", a.ID, a.Email)
 	}
-	return client.Get(a, "INSERT INTO Account (email, password) VALUES ($1, $2) RETURNING *;", a.Email, a.Password)
+	return client.Get(a, "INSERT INTO Account (email) VALUES ($1) RETURNING id, email;", a.Email)
 }
 
-type Timer interface {
-	Now() time.Time
+// SetPassword sets the account's password.
+func (a *Account) SetPassword(password string, client *sqlx.DB) error {
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	if _, err := client.Exec("UPDATE Account SET password = $2 WHERE id = $1;", a.ID, string(hash)); err != nil {
+		return err
+	}
+	return nil
 }
+
 type AuthTokenClaims struct {
 	jwt.StandardClaims
 	Account
 }
 
-func (a Account) AuthToken(key string, c Timer, expiration time.Duration) (string, error) {
+func (a Account) AuthToken(key string, expiration time.Duration) (string, error) {
 	return jwt.NewWithClaims(jwt.SigningMethodHS256, AuthTokenClaims{
-		jwt.StandardClaims{ExpiresAt: c.Now().Add(expiration).Unix()},
+		jwt.StandardClaims{ExpiresAt: time.Now().Add(expiration).Unix()},
 		a,
 	}).SignedString([]byte(key))
 }
 
 // SendResetPasswordEmail sends a templated reset password email for the provided user.
-func (a *Account) SendResetPasswordEmail(appDomain, tokenSecret string, clock Timer, client *gochimp.MandrillAPI) error {
-	token, err := a.AuthToken(tokenSecret, clock, time.Hour*24)
+func (a *Account) SendResetPasswordEmail(appDomain, tokenSecret string, client *gochimp.MandrillAPI) error {
+	token, err := a.AuthToken(tokenSecret, time.Hour*24)
 	if err != nil {
 		return err
 	}
@@ -87,13 +78,13 @@ func (a *Account) SendResetPasswordEmail(appDomain, tokenSecret string, clock Ti
 	return nil
 }
 
-func (a *Account) SendAccountActivationEmail(appDomain, tokenSecret string, clock Timer, client *gochimp.MandrillAPI) error {
-	token, err := a.AuthToken(tokenSecret, clock, time.Hour*24*7)
+func (a *Account) SendActivationEmail(next, appDomain, tokenSecret string, client *gochimp.MandrillAPI) error {
+	token, err := a.AuthToken(tokenSecret, time.Hour*24*7)
 	if err != nil {
 		return err
 	}
 
-	merge := []gochimp.Var{{"SET_PASSWORD_LINK", fmt.Sprintf("%s/#/auth/set-password?token=%s", appDomain, token)}}
+	merge := []gochimp.Var{{"SET_PASSWORD_LINK", fmt.Sprintf("%s/#/auth/activate?token=%s&next=%s", appDomain, token, next)}}
 	rendered, err := client.TemplateRender("account-activation", nil, merge)
 	if err != nil {
 		return err
@@ -127,7 +118,7 @@ func (a *Account) CreateWithMembership(membershipID int, client *sqlx.DB) error 
 		tx.Commit()
 	}()
 
-	err = tx.Get(a, "INSERT INTO Account (email, password) VALUES ($1, $2) RETURNING *;", a.Email, a.Password)
+	err = tx.Get(a, "INSERT INTO Account (email) VALUES ($1) RETURNING id, email;", a.Email)
 	if err != nil {
 		return err
 	}
@@ -156,7 +147,7 @@ func (a *Account) CreateWithOrganization(organizationID int, client *sqlx.DB) er
 		tx.Commit()
 	}()
 
-	err = tx.Get(a, "INSERT INTO Account (email, password) VALUES ($1, $2) RETURNING *;", a.Email, a.Password)
+	err = tx.Get(a, "INSERT INTO Account (email) VALUES ($1) RETURNING id, email;", a.Email)
 	if err != nil {
 		return err
 	}
@@ -197,7 +188,7 @@ func (a *Account) AddOrganization(organizationID int, client *sqlx.DB) error {
 // email address.
 func GetAccountByEmail(email string, client *sqlx.DB) (*Account, error) {
 	a := &Account{}
-	if err := client.Get(a, "SELECT * FROM Account WHERE LOWER(email) = $1;", strings.ToLower(email)); err == sql.ErrNoRows {
+	if err := client.Get(a, "SELECT id, email FROM Account WHERE LOWER(email) = $1;", strings.ToLower(email)); err == sql.ErrNoRows {
 		return nil, nil
 	} else if err != nil {
 		return nil, err
@@ -209,7 +200,7 @@ func GetAccountByEmail(email string, client *sqlx.DB) (*Account, error) {
 // id.
 func GetAccountByID(id int, client *sqlx.DB) (*Account, error) {
 	a := &Account{}
-	if err := client.Get(a, "SELECT * FROM Account WHERE id = $1;", id); err == sql.ErrNoRows {
+	if err := client.Get(a, "SELECT id, email FROM Account WHERE id = $1;", id); err == sql.ErrNoRows {
 		return nil, nil
 	} else if err != nil {
 		return nil, err

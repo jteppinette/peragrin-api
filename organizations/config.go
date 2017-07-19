@@ -4,7 +4,6 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/mattbaird/gochimp"
 	minio "github.com/minio/minio-go"
-	"gitlab.com/peragrin/api/models"
 )
 
 // Config represents the configuration objects necessary to
@@ -13,7 +12,6 @@ type Config struct {
 	DBClient         *sqlx.DB
 	StoreClient      *minio.Client
 	MailClient       *gochimp.MandrillAPI
-	Clock            models.Timer
 	TokenSecret      string
 	AppDomain        string
 	LocationIQAPIKey string
@@ -21,6 +19,6 @@ type Config struct {
 
 // Init returns a configuration struct that can be used to initialize
 // the objects in this package.
-func Init(dbClient *sqlx.DB, storeClient *minio.Client, mailClient *gochimp.MandrillAPI, clock models.Timer, tokenSecret, appDomain, locationIQAPIKey string) *Config {
-	return &Config{dbClient, storeClient, mailClient, clock, tokenSecret, appDomain, locationIQAPIKey}
+func Init(dbClient *sqlx.DB, storeClient *minio.Client, mailClient *gochimp.MandrillAPI, tokenSecret, appDomain, locationIQAPIKey string) *Config {
+	return &Config{dbClient, storeClient, mailClient, tokenSecret, appDomain, locationIQAPIKey}
 }

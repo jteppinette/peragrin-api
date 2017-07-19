@@ -2,6 +2,7 @@ package organizations
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -208,7 +209,6 @@ func (c *Config) AddAccountHandler(r *http.Request) *service.Response {
 		return service.NewResponse(nil, http.StatusOK, account)
 	}
 
-	account.Password = ""
 	if err := account.CreateWithOrganization(organizationID, c.DBClient); err != nil {
 		log.WithFields(log.Fields{
 			"email": account.Email, "error": err.Error(), "organizationID": organizationID, "id": r.Header.Get("X-Request-ID"),
@@ -216,7 +216,7 @@ func (c *Config) AddAccountHandler(r *http.Request) *service.Response {
 		return service.NewResponse(errAccountCreation, http.StatusBadRequest, map[string]string{"msg": errAccountCreation.Error()})
 	}
 
-	if err := account.SendAccountActivationEmail(c.AppDomain, c.TokenSecret, c.Clock, c.MailClient); err != nil {
+	if err := account.SendActivationEmail(fmt.Sprintf("/organizations/%d", organizationID), c.AppDomain, c.TokenSecret, c.MailClient); err != nil {
 		log.WithFields(log.Fields{
 			"email": account.Email, "error": err.Error(), "id": r.Header.Get("X-Request-ID"),
 		}).Info(errAccountActivationEmail.Error())

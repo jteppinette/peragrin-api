@@ -1,14 +1,35 @@
 package accounts
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 	"gitlab.com/peragrin/api/models"
 	"gitlab.com/peragrin/api/service"
 )
+
+// UpdateAccountHandler updates an account.
+func (c *Config) UpdateAccountHandler(r *http.Request) *service.Response {
+	id, err := strconv.Atoi(mux.Vars(r)["accountID"])
+	if err != nil {
+		return service.NewResponse(errors.Wrap(err, errAccountIDRequired.Error()), http.StatusBadRequest, nil)
+	}
+
+	account := models.Account{}
+	if err := json.NewDecoder(r.Body).Decode(&account); err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+	account.ID = id
+
+	if err := account.Save(c.DBClient); err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+	return service.NewResponse(nil, http.StatusOK, account)
+}
 
 // ForgotPasswordHandler generates a token that can be used to reset the password
 // of the account with the provided email address.
@@ -26,8 +47,55 @@ func (c *Config) ForgotPasswordHandler(r *http.Request) *service.Response {
 		return service.NewResponse(errAccountNotFound, http.StatusNotFound, nil)
 	}
 
-	if err := account.SendResetPasswordEmail(c.AppDomain, c.TokenSecret, c.Clock, c.MailClient); err != nil {
+	if err := account.SendResetPasswordEmail(c.AppDomain, c.TokenSecret, c.MailClient); err != nil {
 		return service.NewResponse(err, http.StatusInternalServerError, nil)
 	}
 	return service.NewResponse(nil, http.StatusOK, nil)
+}
+
+// ListOrganizationsHandler generates a response object containing the organizations that are
+// operated by the currently authenticated account.
+func (c *Config) ListOrganizationsHandler(r *http.Request) *service.Response {
+	id, err := strconv.Atoi(mux.Vars(r)["accountID"])
+	if err != nil {
+		return service.NewResponse(errors.Wrap(err, errAccountIDRequired.Error()), http.StatusBadRequest, nil)
+	}
+
+	organizations, err := models.GetOrganizationsByAccount(id, c.DBClient)
+	if err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+
+	if err := organizations.SetPresignedLogoLinks(c.StoreClient); err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+	return service.NewResponse(nil, http.StatusOK, organizations)
+}
+
+// CreateOrganizationHandler saves a new organization to the database.
+func (c *Config) CreateOrganizationHandler(r *http.Request) *service.Response {
+	id, err := strconv.Atoi(mux.Vars(r)["accountID"])
+	if err != nil {
+		return service.NewResponse(errors.Wrap(err, errAccountIDRequired.Error()), http.StatusBadRequest, nil)
+	}
+
+	organization := models.Organization{}
+	if err := json.NewDecoder(r.Body).Decode(&organization); err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+
+	// If there is a geocode lookup failure, then log the failure. We
+	// will just let the user manually enter the coordinates.
+	if err := organization.SetGeo(c.LocationIQAPIKey); err != nil {
+		log.WithFields(log.Fields{
+			"street": organization.Street, "city": organization.City, "state": organization.State, "country": organization.Country, "zip": organization.Zip,
+			"error": err.Error(),
+			"id":    r.Header.Get("X-Request-ID"),
+		}).Info(errGeocode.Error())
+	}
+
+	if err := organization.CreateWithAccount(id, c.DBClient); err != nil {
+		return service.NewResponse(errors.Wrap(err, errCreateOrganization.Error()), http.StatusBadRequest, nil)
+	}
+	return service.NewResponse(nil, http.StatusCreated, organization)
 }

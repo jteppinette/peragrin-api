@@ -4,14 +4,11 @@ import "errors"
 
 var (
 	errBadCredentialsFormat               = errors.New("bad credentials format")
-	errInvalidCredentials                 = errors.New("invalid credentials")
 	errAccountNotFound                    = errors.New("account not found")
 	errAuthenticationRequired             = errors.New("authentication required")
 	errAuthenticationStrategyNotSupported = errors.New("authentication strategy not supported")
 	errRegistration                       = errors.New("registration")
-
-	errCreateOrganization = errors.New("create organization")
-	errGeocode            = errors.New("geocode")
+	errAccountActivationEmail             = errors.New("account activation email")
 
 	errBasicAuth = errors.New("basic auth")
 	errJWTAuth   = errors.New("jwt auth")

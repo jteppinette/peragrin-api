@@ -17,16 +17,18 @@ type Accounts []Account
 
 // Account represents an entity that can login into the Peragrin system.
 type Account struct {
-	ID    int    `json:"id"`
-	Email string `json:"email"`
+	ID        int     `json:"id"`
+	Email     string  `json:"email"`
+	FirstName *string `json:"firstName"`
+	LastName  *string `json:"lastName"`
 }
 
 // Save creates or updates the given account in the database.
 func (a *Account) Save(client *sqlx.DB) error {
 	if a.ID != 0 {
-		return client.Get(a, "UPDATE Account SET email = $2 WHERE id = $1 RETURNING id, email;", a.ID, a.Email)
+		return client.Get(a, "UPDATE Account SET email = $2, firstName = $3, lastName = $4 WHERE id = $1 RETURNING id, email, firstName, lastName;", a.ID, a.Email, a.FirstName, a.LastName)
 	}
-	return client.Get(a, "INSERT INTO Account (email) VALUES ($1) RETURNING id, email;", a.Email)
+	return client.Get(a, "INSERT INTO Account (email, firstName, lastName) VALUES ($1, $2, $3) RETURNING id, email, firstName, lastName;", a.Email, a.FirstName, a.LastName)
 }
 
 // SetPassword sets the account's password.
@@ -118,7 +120,7 @@ func (a *Account) CreateWithMembership(membershipID int, client *sqlx.DB) error 
 		tx.Commit()
 	}()
 
-	err = tx.Get(a, "INSERT INTO Account (email) VALUES ($1) RETURNING id, email;", a.Email)
+	err = tx.Get(a, "INSERT INTO Account (email, firstName, lastName) VALUES ($1, $2, $3) RETURNING id, email, firstname, lastName;", a.Email, a.FirstName, a.LastName)
 	if err != nil {
 		return err
 	}
@@ -147,7 +149,7 @@ func (a *Account) CreateWithOrganization(organizationID int, client *sqlx.DB) er
 		tx.Commit()
 	}()
 
-	err = tx.Get(a, "INSERT INTO Account (email) VALUES ($1) RETURNING id, email;", a.Email)
+	err = tx.Get(a, "INSERT INTO Account (email, firstName, lastName) VALUES ($1, $2, $3) RETURNING id, email, firstName, lastName;", a.Email, a.FirstName, a.LastName)
 	if err != nil {
 		return err
 	}
@@ -188,7 +190,7 @@ func (a *Account) AddOrganization(organizationID int, client *sqlx.DB) error {
 // email address.
 func GetAccountByEmail(email string, client *sqlx.DB) (*Account, error) {
 	a := &Account{}
-	if err := client.Get(a, "SELECT id, email FROM Account WHERE LOWER(email) = $1;", strings.ToLower(email)); err == sql.ErrNoRows {
+	if err := client.Get(a, "SELECT id, email, firstName, lastName FROM Account WHERE LOWER(email) = $1;", strings.ToLower(email)); err == sql.ErrNoRows {
 		return nil, nil
 	} else if err != nil {
 		return nil, err
@@ -200,7 +202,7 @@ func GetAccountByEmail(email string, client *sqlx.DB) (*Account, error) {
 // id.
 func GetAccountByID(id int, client *sqlx.DB) (*Account, error) {
 	a := &Account{}
-	if err := client.Get(a, "SELECT id, email FROM Account WHERE id = $1;", id); err == sql.ErrNoRows {
+	if err := client.Get(a, "SELECT id, email, firstName, lastName FROM Account WHERE id = $1;", id); err == sql.ErrNoRows {
 		return nil, nil
 	} else if err != nil {
 		return nil, err
@@ -212,7 +214,7 @@ func GetAccountByID(id int, client *sqlx.DB) (*Account, error) {
 func GetAccountsByMembership(membershipID int, client *sqlx.DB) (Accounts, error) {
 	accounts := Accounts{}
 	if err := client.Select(&accounts, `
-		SELECT Account.email, Account.id
+		SELECT Account.id, Account.email, Account.firstName, Account.lastName
 		FROM Account INNER JOIN AccountMembership ON (Account.id = AccountMembership.accountID)
 		WHERE AccountMembership.membershipID = $1
 	`, membershipID); err != nil {
@@ -225,7 +227,7 @@ func GetAccountsByMembership(membershipID int, client *sqlx.DB) (Accounts, error
 func GetAccountsByOrganization(organizationID int, client *sqlx.DB) (Accounts, error) {
 	accounts := Accounts{}
 	if err := client.Select(&accounts, `
-		SELECT Account.email, Account.id
+		SELECT Account.id, Account.email, Account.firstName, Account.lastName
 		FROM Account INNER JOIN AccountOrganization ON (Account.id = AccountOrganization.accountID)
 		WHERE AccountOrganization.organizationID = $1
 	`, organizationID); err != nil {

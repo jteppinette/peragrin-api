@@ -84,6 +84,17 @@ func (c *Config) AddAccountHandler(r *http.Request) *service.Response {
 	if existing, err := models.GetAccountByEmail(account.Email, c.DBClient); err != nil {
 		return service.NewResponse(nil, http.StatusBadRequest, nil)
 	} else if existing != nil {
+		// Upate the account incase the account metadata was upated.
+		// TODO: this could be updated in the UI by providing a search typeahead.
+		if *account.FirstName != "" {
+			existing.FirstName = account.FirstName
+		}
+		if *account.LastName != "" {
+			existing.LastName = account.LastName
+		}
+		if err := existing.Save(c.DBClient); err != nil {
+			return service.NewResponse(err, http.StatusBadRequest, nil)
+		}
 		if err := existing.AddMembership(membershipID, c.DBClient); err != nil {
 			return service.NewResponse(err, http.StatusBadRequest, nil)
 		}

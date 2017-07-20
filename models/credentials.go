@@ -14,7 +14,7 @@ import (
 // against the Peragrin system.
 type Credentials struct {
 	Account
-	Password string `json:"-"`
+	Password string `json:"password"`
 }
 
 // Authenticate checks the provided credentials against the database. If

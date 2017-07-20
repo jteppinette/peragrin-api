@@ -17,10 +17,10 @@ type Accounts []Account
 
 // Account represents an entity that can login into the Peragrin system.
 type Account struct {
-	ID        int     `json:"id"`
-	Email     string  `json:"email"`
-	FirstName *string `json:"firstName"`
-	LastName  *string `json:"lastName"`
+	ID        int    `json:"id"`
+	Email     string `json:"email"`
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
 }
 
 // Save creates or updates the given account in the database.

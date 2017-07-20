@@ -205,10 +205,10 @@ func (c *Config) AddAccountHandler(r *http.Request) *service.Response {
 	} else if existing != nil {
 		// Upate the account incase the account metadata was upated.
 		// TODO: this could be updated in the UI by providing a search typeahead.
-		if *account.FirstName != "" {
+		if account.FirstName != "" {
 			existing.FirstName = account.FirstName
 		}
-		if *account.LastName != "" {
+		if account.LastName != "" {
 			existing.LastName = account.LastName
 		}
 		if err := existing.Save(c.DBClient); err != nil {

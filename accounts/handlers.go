@@ -99,3 +99,27 @@ func (c *Config) CreateOrganizationHandler(r *http.Request) *service.Response {
 	}
 	return service.NewResponse(nil, http.StatusCreated, organization)
 }
+
+// ListHandler returns a response with all accounts.
+func (c *Config) ListHandler(r *http.Request) *service.Response {
+	values := r.URL.Query()
+
+	email := values.Get("email")
+	if email == "" {
+		return service.NewResponse(nil, http.StatusBadRequest, nil)
+	}
+	account, err := models.GetAccountByEmail(email, c.DBClient)
+	if err != nil {
+		return service.NewResponse(nil, http.StatusBadRequest, nil)
+	}
+
+	type response struct {
+		Results models.Accounts `json:"results"`
+		Total   int             `json:"total"`
+	}
+
+	if account == nil {
+		return service.NewResponse(nil, http.StatusOK, response{models.Accounts{}, 0})
+	}
+	return service.NewResponse(nil, http.StatusOK, response{models.Accounts{*account}, 1})
+}

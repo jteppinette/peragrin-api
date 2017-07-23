@@ -18,6 +18,9 @@ type Promotion struct {
 	Expiration     common.JSONNullTime `json:"expiration"`
 	IsSingleUse    bool                `json:"isSingleUse"`
 	MembershipID   *int                `json:"membershipID,omitempty"`
+
+	// Redemptions is the number of times this promotion has been redeemed.
+	Redemptions int `json:"redemptions,omitempty"`
 }
 
 // Save creates or updates a promotion in the database based on the existence of an id.
@@ -40,7 +43,7 @@ func DeletePromotion(id int, client *sqlx.DB) error {
 // GetPromotionsByOrganization returns all promotions for a given organization.
 func GetPromotionsByOrganization(organizationID int, client *sqlx.DB) (Promotions, error) {
 	promotions := Promotions{}
-	if err := client.Select(&promotions, "SELECT * FROM Promotion WHERE OrganizationID = $1", organizationID); err != nil {
+	if err := client.Select(&promotions, "SELECT Promotion.*, COUNT(AccountPromotion) AS redemptions FROM Promotion LEFT OUTER JOIN AccountPromotion ON (Promotion.id = AccountPromotion.promotionID) WHERE Promotion.organizationID = $1 GROUP BY Promotion.id;", organizationID); err != nil {
 		return nil, err
 	}
 	return promotions, nil

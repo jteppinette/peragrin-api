@@ -118,16 +118,4 @@ func init() {
 
 	Serve.PersistentFlags().StringP("port", "", "8000", "port that the api will listen on")
 	viper.BindPFlag("PORT", Serve.PersistentFlags().Lookup("port"))
-
-	Serve.PersistentFlags().StringP("token-secret", "", "token-secret", "the secret used to sign the json web tokens")
-	viper.BindPFlag("TOKEN_SECRET", Serve.PersistentFlags().Lookup("token-secret"))
-
-	Serve.PersistentFlags().StringP("locationiq-api-key", "", "", "api key to access location iq api")
-	viper.BindPFlag("LOCATIONIQ_API_KEY", Serve.PersistentFlags().Lookup("locationiq-api-key"))
-
-	Serve.PersistentFlags().StringP("mandrill-key", "", "", "mandrill key")
-	viper.BindPFlag("MANDRILL_KEY", Serve.PersistentFlags().Lookup("mandrill-key"))
-
-	Serve.PersistentFlags().StringP("app-domain", "", "http://localhost:8080", "app domain")
-	viper.BindPFlag("APP_DOMAIN", Serve.PersistentFlags().Lookup("app-domain"))
 }

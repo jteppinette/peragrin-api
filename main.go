@@ -72,8 +72,21 @@ func main() {
 	root.PersistentFlags().StringP("log-level", "l", "info", "log level [debug, info, warning, error, fatal, panic]")
 	viper.BindPFlag("LOG_LEVEL", root.PersistentFlags().Lookup("log-level"))
 
+	root.PersistentFlags().StringP("token-secret", "", "token-secret", "the secret used to sign the json web tokens")
+	viper.BindPFlag("TOKEN_SECRET", root.PersistentFlags().Lookup("token-secret"))
+
+	root.PersistentFlags().StringP("locationiq-api-key", "", "", "api key to access location iq api")
+	viper.BindPFlag("LOCATIONIQ_API_KEY", root.PersistentFlags().Lookup("locationiq-api-key"))
+
+	root.PersistentFlags().StringP("mandrill-key", "", "", "mandrill key")
+	viper.BindPFlag("MANDRILL_KEY", root.PersistentFlags().Lookup("mandrill-key"))
+
+	root.PersistentFlags().StringP("app-domain", "", "http://localhost:8080", "app domain")
+	viper.BindPFlag("APP_DOMAIN", root.PersistentFlags().Lookup("app-domain"))
+
 	root.AddCommand(cmd.Migrate)
 	root.AddCommand(cmd.Serve)
+	root.AddCommand(cmd.AddSuperUser)
 
 	if err := root.Execute(); err != nil {
 		log.Fatal(err)

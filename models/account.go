@@ -21,14 +21,15 @@ type Account struct {
 	Email     string `json:"email"`
 	FirstName string `json:"firstName"`
 	LastName  string `json:"lastName"`
+	IsSuper   bool   `json:"isSuper"`
 }
 
 // Save creates or updates the given account in the database.
 func (a *Account) Save(client *sqlx.DB) error {
 	if a.ID != 0 {
-		return client.Get(a, "UPDATE Account SET email = $2, firstName = $3, lastName = $4 WHERE id = $1 RETURNING id, email, firstName, lastName;", a.ID, a.Email, a.FirstName, a.LastName)
+		return client.Get(a, "UPDATE Account SET email = $2, firstName = $3, lastName = $4 WHERE id = $1 RETURNING id, email, firstName, lastName, isSuper;", a.ID, a.Email, a.FirstName, a.LastName)
 	}
-	return client.Get(a, "INSERT INTO Account (email, firstName, lastName) VALUES ($1, $2, $3) RETURNING id, email, firstName, lastName;", a.Email, a.FirstName, a.LastName)
+	return client.Get(a, "INSERT INTO Account (email, firstName, lastName) VALUES ($1, $2, $3) RETURNING id, email, firstName, lastName, isSuper;", a.Email, a.FirstName, a.LastName)
 }
 
 // SetPassword sets the account's password.
@@ -41,6 +42,11 @@ func (a *Account) SetPassword(password string, client *sqlx.DB) error {
 		return err
 	}
 	return nil
+}
+
+// SetIsSuper sets the account's super user status.
+func (a *Account) SetIsSuper(isSuper bool, client *sqlx.DB) error {
+	return client.Get(a, "UPDATE Account SET isSuper = $2 WHERE id = $1 RETURNING id, email, firstName, lastName, isSuper;", a.ID, isSuper)
 }
 
 type AuthTokenClaims struct {
@@ -120,7 +126,7 @@ func (a *Account) CreateWithMembership(membershipID int, client *sqlx.DB) error 
 		tx.Commit()
 	}()
 
-	err = tx.Get(a, "INSERT INTO Account (email, firstName, lastName) VALUES ($1, $2, $3) RETURNING id, email, firstname, lastName;", a.Email, a.FirstName, a.LastName)
+	err = tx.Get(a, "INSERT INTO Account (email, firstName, lastName) VALUES ($1, $2, $3) RETURNING id, email, firstname, lastName, isSuper;", a.Email, a.FirstName, a.LastName)
 	if err != nil {
 		return err
 	}
@@ -149,7 +155,7 @@ func (a *Account) CreateWithOrganization(organizationID int, client *sqlx.DB) er
 		tx.Commit()
 	}()
 
-	err = tx.Get(a, "INSERT INTO Account (email, firstName, lastName) VALUES ($1, $2, $3) RETURNING id, email, firstName, lastName;", a.Email, a.FirstName, a.LastName)
+	err = tx.Get(a, "INSERT INTO Account (email, firstName, lastName) VALUES ($1, $2, $3) RETURNING id, email, firstName, lastName, isSuper;", a.Email, a.FirstName, a.LastName)
 	if err != nil {
 		return err
 	}
@@ -190,7 +196,7 @@ func (a *Account) AddOrganization(organizationID int, client *sqlx.DB) error {
 // email address.
 func GetAccountByEmail(email string, client *sqlx.DB) (*Account, error) {
 	a := &Account{}
-	if err := client.Get(a, "SELECT id, email, firstName, lastName FROM Account WHERE LOWER(email) = $1;", strings.ToLower(email)); err == sql.ErrNoRows {
+	if err := client.Get(a, "SELECT id, email, firstName, lastName, isSuper FROM Account WHERE LOWER(email) = $1;", strings.ToLower(email)); err == sql.ErrNoRows {
 		return nil, nil
 	} else if err != nil {
 		return nil, err
@@ -202,7 +208,7 @@ func GetAccountByEmail(email string, client *sqlx.DB) (*Account, error) {
 // id.
 func GetAccountByID(id int, client *sqlx.DB) (*Account, error) {
 	a := &Account{}
-	if err := client.Get(a, "SELECT id, email, firstName, lastName FROM Account WHERE id = $1;", id); err == sql.ErrNoRows {
+	if err := client.Get(a, "SELECT id, email, firstName, lastName, isSuper FROM Account WHERE id = $1;", id); err == sql.ErrNoRows {
 		return nil, nil
 	} else if err != nil {
 		return nil, err
@@ -214,7 +220,7 @@ func GetAccountByID(id int, client *sqlx.DB) (*Account, error) {
 func GetAccountsByMembership(membershipID int, client *sqlx.DB) (Accounts, error) {
 	accounts := Accounts{}
 	if err := client.Select(&accounts, `
-		SELECT Account.id, Account.email, Account.firstName, Account.lastName
+		SELECT Account.id, Account.email, Account.firstName, Account.lastName, Account.isSuper
 		FROM Account INNER JOIN AccountMembership ON (Account.id = AccountMembership.accountID)
 		WHERE AccountMembership.membershipID = $1
 	`, membershipID); err != nil {
@@ -227,7 +233,7 @@ func GetAccountsByMembership(membershipID int, client *sqlx.DB) (Accounts, error
 func GetAccountsByOrganization(organizationID int, client *sqlx.DB) (Accounts, error) {
 	accounts := Accounts{}
 	if err := client.Select(&accounts, `
-		SELECT Account.id, Account.email, Account.firstName, Account.lastName
+		SELECT Account.id, Account.email, Account.firstName, Account.lastName, Account.isSuper
 		FROM Account INNER JOIN AccountOrganization ON (Account.id = AccountOrganization.accountID)
 		WHERE AccountOrganization.organizationID = $1
 	`, organizationID); err != nil {

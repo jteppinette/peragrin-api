@@ -97,8 +97,12 @@ func (c *Config) AddAccountHandler(r *http.Request) *service.Response {
 		return service.NewResponse(errAccountCreation, http.StatusBadRequest, map[string]string{"msg": errAccountCreation.Error()})
 	}
 
-	// TODO: send new membership accounts to community map
-	if err := account.SendActivationEmail(fmt.Sprintf("/map"), c.AppDomain, c.TokenSecret, c.MailClient); err != nil {
+	community, err := models.GetCommunityByMembershipID(membershipID, c.DBClient)
+	if err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+
+	if err := account.SendActivationEmail(fmt.Sprintf("/map?community=%s", community.Name), c.AppDomain, c.TokenSecret, c.MailClient); err != nil {
 		log.WithFields(log.Fields{
 			"email": account.Email, "error": err.Error(), "id": r.Header.Get("X-Request-ID"),
 		}).Info(errAccountActivationEmail.Error())

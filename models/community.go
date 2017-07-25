@@ -79,3 +79,12 @@ func GetCommunityByID(id int, client *sqlx.DB) (Community, error) {
 	}
 	return community, nil
 }
+
+// GetCommunityByMembershipID returns the requested community.
+func GetCommunityByMembershipID(id int, client *sqlx.DB) (Community, error) {
+	community := Community{}
+	if err := client.Get(&community, "SELECT Community.* FROM Community INNER JOIN Membership ON (Community.ID = Membership.CommunityID) WHERE Membership.ID = $1;", id); err != nil {
+		return community, err
+	}
+	return community, nil
+}

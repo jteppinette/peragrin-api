@@ -6,6 +6,7 @@ import (
 
 var (
 	errOrganizationIDRequired = errors.New("organization id required")
+	errAccountIDRequired      = errors.New("account id required")
 	errCommunityIDRequired    = errors.New("community id required")
 
 	errAccountCreation        = errors.New("account creation")

@@ -192,6 +192,14 @@ func (a *Account) AddOrganization(organizationID int, client *sqlx.DB) error {
 	return nil
 }
 
+// RemoveOrganization removes an organization from the given account.
+func (a *Account) RemoveOrganization(organizationID int, client *sqlx.DB) error {
+	if _, err := client.Exec("DELETE FROM AccountOrganization WHERE accountID = $1 AND organizationID = $2;", a.ID, organizationID); err != nil {
+		return err
+	}
+	return nil
+}
+
 // GetAccountByEmail returns the account in the database that matches the provided
 // email address.
 func GetAccountByEmail(email string, client *sqlx.DB) (*Account, error) {

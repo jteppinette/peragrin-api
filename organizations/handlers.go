@@ -225,6 +225,25 @@ func (c *Config) AddAccountHandler(r *http.Request) *service.Response {
 	return service.NewResponse(nil, http.StatusOK, account)
 }
 
+// RemoveAccountHandler removes the account - organization relationship for the provided resources.
+func (c *Config) RemoveAccountHandler(r *http.Request) *service.Response {
+	organizationID, err := strconv.Atoi(mux.Vars(r)["organizationID"])
+	if err != nil {
+		return service.NewResponse(errors.Wrap(err, errOrganizationIDRequired.Error()), http.StatusBadRequest, nil)
+	}
+	accountID, err := strconv.Atoi(mux.Vars(r)["accountID"])
+	if err != nil {
+		return service.NewResponse(errors.Wrap(err, errAccountIDRequired.Error()), http.StatusBadRequest, nil)
+	}
+
+	account := models.Account{ID: accountID}
+	if err := account.RemoveOrganization(organizationID, c.DBClient); err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+
+	return service.NewResponse(nil, http.StatusNoContent, nil)
+}
+
 // JoinCommunityHandler creates a relationship between the given
 // organization and community.
 func (c *Config) JoinCommunityHandler(r *http.Request) *service.Response {

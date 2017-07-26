@@ -88,6 +88,7 @@ func serve() {
 	r.Handle("/organizations/{organizationID:[0-9]+}/promotions", service.Handler(organizations.CreatePromotionHandler)).Methods(http.MethodPost)
 	r.Handle("/organizations/{organizationID:[0-9]+}/accounts", auth.RequiredMiddleware(organizations.ListAccountsHandler)).Methods(http.MethodGet)
 	r.Handle("/organizations/{organizationID:[0-9]+}/accounts", auth.RequiredMiddleware(organizations.AddAccountHandler)).Methods(http.MethodPost)
+	r.Handle("/organizations/{organizationID:[0-9]+}/accounts/{accountID:[0-9]+}", auth.RequiredMiddleware(organizations.RemoveAccountHandler)).Methods(http.MethodDelete)
 	r.Handle("/organizations/{organizationID:[0-9]+}/logo", auth.RequiredMiddleware(organizations.UploadLogoHandler)).Methods(http.MethodPost)
 
 	r.Handle("/promotions/{promotionID:[0-9]+}/redeem", auth.RequiredMiddleware(promotions.RedeemHandler)).Methods(http.MethodPost)

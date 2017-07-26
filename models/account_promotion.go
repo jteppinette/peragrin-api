@@ -44,7 +44,7 @@ func (ap *AccountPromotion) HasPermission(client *sqlx.DB) (bool, error) {
 // GetAccountsPromotionsByID returns all account promotion redemption events for the given account and promotion.
 func GetAccountsPromotionsByID(accountID, promotionID int, client *sqlx.DB) ([]AccountPromotion, error) {
 	result := []AccountPromotion{}
-	if err := client.Select(&result, "SELECT * FROM AccountPromotion WHERE AccountID = $1 AND PromotionID = $2;", accountID, promotionID); err != nil {
+	if err := client.Select(&result, "SELECT * FROM AccountPromotion WHERE AccountID = $1 AND PromotionID = $2 ORDER BY consumedAt DESC;", accountID, promotionID); err != nil {
 		return nil, err
 	}
 	return result, nil

@@ -123,3 +123,24 @@ func (c *Config) ListHandler(r *http.Request) *service.Response {
 	}
 	return service.NewResponse(nil, http.StatusOK, response{models.Accounts{*account}, 1})
 }
+
+// ListPromotionRedemptionsHandler returns the list of promotion redemption events for the given
+// account and promotion.
+func (c *Config) ListPromotionRedemptionsHandler(r *http.Request) *service.Response {
+	accountID, err := strconv.Atoi(mux.Vars(r)["accountID"])
+	if err != nil {
+		return service.NewResponse(errors.Wrap(err, errAccountIDRequired.Error()), http.StatusBadRequest, nil)
+	}
+
+	promotionID, err := strconv.Atoi(mux.Vars(r)["promotionID"])
+	if err != nil {
+		return service.NewResponse(errors.Wrap(err, errPromotionIDRequired.Error()), http.StatusBadRequest, nil)
+	}
+
+	events, err := models.GetAccountsPromotionsByID(accountID, promotionID, c.DBClient)
+	if err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+
+	return service.NewResponse(nil, http.StatusOK, events)
+}

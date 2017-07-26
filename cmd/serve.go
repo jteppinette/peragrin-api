@@ -59,6 +59,7 @@ func serve() {
 	r.Handle("/accounts/{accountID:[0-9]+}/forgot-password", auth.RequiredMiddleware(accounts.ForgotPasswordHandler)).Methods(http.MethodPost)
 	r.Handle("/accounts/{accountID:[0-9]+}/organizations", auth.RequiredMiddleware(accounts.ListOrganizationsHandler)).Methods(http.MethodGet)
 	r.Handle("/accounts/{accountID:[0-9]+}/organizations", auth.RequiredMiddleware(accounts.CreateOrganizationHandler)).Methods(http.MethodPost)
+	r.Handle("/accounts/{accountID:[0-9]+}/promotions/{promotionID:[0-9]+}", auth.RequiredMiddleware(accounts.ListPromotionRedemptionsHandler)).Methods(http.MethodGet)
 
 	r.Handle("/communities", service.Handler(communities.ListHandler))
 	r.Handle("/communities/{communityID:[0-9]+}", service.Handler(communities.GetHandler)).Methods(http.MethodGet)

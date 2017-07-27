@@ -16,6 +16,7 @@ import (
 	"gitlab.com/peragrin/api/auth"
 	"gitlab.com/peragrin/api/communities"
 	"gitlab.com/peragrin/api/db"
+	"gitlab.com/peragrin/api/geo"
 	"gitlab.com/peragrin/api/memberships"
 	"gitlab.com/peragrin/api/organizations"
 	"gitlab.com/peragrin/api/promotions"
@@ -43,6 +44,7 @@ func serve() {
 	auth := auth.Init(dbClient, mailClient, viper.GetString("TOKEN_SECRET"), viper.GetString("APP_DOMAIN"))
 	accounts := accounts.Init(dbClient, storeClient, mailClient, viper.GetString("TOKEN_SECRET"), viper.GetString("APP_DOMAIN"), viper.GetString("LOCATIONIQ_API_KEY"))
 	organizations := organizations.Init(dbClient, storeClient, mailClient, viper.GetString("TOKEN_SECRET"), viper.GetString("APP_DOMAIN"), viper.GetString("LOCATIONIQ_API_KEY"))
+	geo := geo.Init(viper.GetString("LOCATIONIQ_API_KEY"))
 	communities := communities.Init(dbClient, storeClient, viper.GetString("LOCATIONIQ_API_KEY"))
 	memberships := memberships.Init(dbClient, mailClient, viper.GetString("TOKEN_SECRET"), viper.GetString("APP_DOMAIN"))
 	promotions := promotions.Init(dbClient)
@@ -53,6 +55,8 @@ func serve() {
 	r.Handle("/auth/forgot-password", service.Handler(auth.ForgotPasswordHandler)).Methods(http.MethodPost)
 	r.Handle("/auth/set-password", auth.RequiredMiddleware(auth.SetPasswordHandler)).Methods(http.MethodPost)
 	r.Handle("/auth/activate", auth.RequiredMiddleware(auth.ActivateHandler)).Methods(http.MethodPost)
+
+	r.Handle("/geo", auth.RequiredMiddleware(geo.LookupHandler)).Methods(http.MethodPost)
 
 	r.Handle("/accounts", auth.RequiredMiddleware(accounts.ListHandler)).Methods(http.MethodGet)
 	r.Handle("/accounts/{accountID:[0-9]+}", auth.RequiredMiddleware(accounts.UpdateAccountHandler)).Methods(http.MethodPut)

@@ -46,7 +46,7 @@ func (o *Organization) SetGeo(key string) error {
 		return errAddressRequired
 	}
 	var err error
-	if o.Lon, o.Lat, err = o.geocode(key); err != nil {
+	if o.Lon, o.Lat, err = o.Geocode(key); err != nil {
 		return err
 	}
 	return nil

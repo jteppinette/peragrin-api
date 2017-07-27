@@ -16,7 +16,7 @@ type Address struct {
 	Zip     string `json:"zip"`
 }
 
-func (a Address) geocode(key string) (float64, float64, error) {
+func (a Address) Geocode(key string) (float64, float64, error) {
 	r, err := http.Get(fmt.Sprintf("http://locationiq.org/v1/search.php?key=%s&format=json&limit=1&street=%s&city=%s&state=%s&country=%s&postalcode=%s", key, a.Street, a.City, a.State, a.Country, a.Zip))
 	if err != nil {
 		return 0, 0, err

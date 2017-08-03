@@ -40,18 +40,6 @@ type Organization struct {
 	IsAdministrator *bool `json:"isAdministrator,omitempty"`
 }
 
-// SetGeo does a reverse geo-code lookup to turn an address into coordinates.
-func (o *Organization) SetGeo(key string) error {
-	if o.Street == "" || o.City == "" || o.State == "" || o.Country == "" || o.Zip == "" {
-		return errAddressRequired
-	}
-	var err error
-	if o.Lon, o.Lat, err = o.Geocode(key); err != nil {
-		return err
-	}
-	return nil
-}
-
 // UploadLogo puts a new object in the static store.
 func (o *Organization) UploadLogo(reader io.Reader, client *minio.Client) error {
 	_, err := client.PutObject(bucket, fmt.Sprintf("logos/%d-%s", o.ID, o.Logo), reader, "application/octet-stream")

@@ -18,10 +18,9 @@ type Config struct {
 	MailClient       *gochimp.MandrillAPI
 	TokenSecret      string
 	AppDomain        string
-	LocationIQAPIKey string
 }
 
 // Init generates an accounts.Config instance.
-func Init(dbClient *sqlx.DB, storeClient *minio.Client, mailClient *gochimp.MandrillAPI, tokenSecret, appDomain, locationIQAPIKey string) *Config {
-	return &Config{dbClient, storeClient, mailClient, tokenSecret, appDomain, locationIQAPIKey}
+func Init(dbClient *sqlx.DB, storeClient *minio.Client, mailClient *gochimp.MandrillAPI, tokenSecret, appDomain string) *Config {
+	return &Config{dbClient, storeClient, mailClient, tokenSecret, appDomain}
 }

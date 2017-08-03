@@ -27,17 +27,6 @@ func (c *Config) UpdateHandler(r *http.Request) *service.Response {
 	}
 	organization.ID = id
 
-	// If this organization does not have lon/lat, then query the location service.
-	if organization.Lon == 0 || organization.Lat == 0 {
-		if err := organization.SetGeo(c.LocationIQAPIKey); err != nil {
-			log.WithFields(log.Fields{
-				"street": organization.Street, "city": organization.City, "state": organization.State, "country": organization.Country, "zip": organization.Zip,
-				"error": err.Error(),
-				"id":    r.Header.Get("X-Request-ID"),
-			}).Info(errGeocode.Error())
-		}
-	}
-
 	if err := organization.Update(c.DBClient); err != nil {
 		return service.NewResponse(err, http.StatusBadRequest, nil)
 	}

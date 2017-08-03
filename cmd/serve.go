@@ -42,10 +42,10 @@ func serve() {
 	}
 
 	auth := auth.Init(dbClient, mailClient, viper.GetString("TOKEN_SECRET"), viper.GetString("APP_DOMAIN"))
-	accounts := accounts.Init(dbClient, storeClient, mailClient, viper.GetString("TOKEN_SECRET"), viper.GetString("APP_DOMAIN"), viper.GetString("LOCATIONIQ_API_KEY"))
-	organizations := organizations.Init(dbClient, storeClient, mailClient, viper.GetString("TOKEN_SECRET"), viper.GetString("APP_DOMAIN"), viper.GetString("LOCATIONIQ_API_KEY"))
+	accounts := accounts.Init(dbClient, storeClient, mailClient, viper.GetString("TOKEN_SECRET"), viper.GetString("APP_DOMAIN"))
+	organizations := organizations.Init(dbClient, storeClient, mailClient, viper.GetString("TOKEN_SECRET"), viper.GetString("APP_DOMAIN"))
 	geo := geo.Init(viper.GetString("LOCATIONIQ_API_KEY"))
-	communities := communities.Init(dbClient, storeClient, viper.GetString("LOCATIONIQ_API_KEY"))
+	communities := communities.Init(dbClient, storeClient)
 	memberships := memberships.Init(dbClient, mailClient, viper.GetString("TOKEN_SECRET"), viper.GetString("APP_DOMAIN"))
 	promotions := promotions.Init(dbClient)
 

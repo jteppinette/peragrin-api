@@ -17,10 +17,13 @@ func (c *Config) LookupHandler(r *http.Request) *service.Response {
 		return service.NewResponse(err, http.StatusBadRequest, nil)
 	}
 
-	log.Info(address)
-
 	lon, lat, err := address.Geocode(c.LocationIQAPIKey)
 	if err != nil {
+		log.WithFields(log.Fields{
+			"street": address.Street, "city": address.City, "state": address.State, "country": address.Country, "zip": address.Zip,
+			"error": err.Error(),
+			"id":    r.Header.Get("X-Request-ID"),
+		}).Info(errGeocode.Error())
 		return service.NewResponse(err, http.StatusBadRequest, nil)
 	}
 

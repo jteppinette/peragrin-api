@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"strconv"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 
@@ -69,20 +68,6 @@ func (c *Config) CreateOrganizationHandler(r *http.Request) *service.Response {
 	organization := models.Organization{}
 	if err := json.NewDecoder(r.Body).Decode(&organization); err != nil {
 		return service.NewResponse(err, http.StatusBadRequest, nil)
-	}
-
-	// If there was no assigned geo coordinates, then run the geocode lookup.
-	if organization.Lon == 0 || organization.Lat == 0 {
-
-		// If there is a geocode lookup failure, then log the failure. We
-		// will just let the user manually enter the coordinates.
-		if err := organization.SetGeo(c.LocationIQAPIKey); err != nil {
-			log.WithFields(log.Fields{
-				"street": organization.Street, "city": organization.City, "state": organization.State, "country": organization.Country, "zip": organization.Zip,
-				"error": err.Error(),
-				"id":    r.Header.Get("X-Request-ID"),
-			}).Info(errGeocode.Error())
-		}
 	}
 
 	if err := organization.CreateWithCommunity(communityID, c.DBClient); err != nil {

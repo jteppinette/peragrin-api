@@ -14,5 +14,4 @@ var (
 
 	errUploadLogo         = errors.New("upload logo")
 	errUpdateOrganization = errors.New("update organization")
-	errGeocode            = errors.New("geocode")
 )

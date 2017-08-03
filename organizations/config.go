@@ -14,11 +14,10 @@ type Config struct {
 	MailClient       *gochimp.MandrillAPI
 	TokenSecret      string
 	AppDomain        string
-	LocationIQAPIKey string
 }
 
 // Init returns a configuration struct that can be used to initialize
 // the objects in this package.
-func Init(dbClient *sqlx.DB, storeClient *minio.Client, mailClient *gochimp.MandrillAPI, tokenSecret, appDomain, locationIQAPIKey string) *Config {
-	return &Config{dbClient, storeClient, mailClient, tokenSecret, appDomain, locationIQAPIKey}
+func Init(dbClient *sqlx.DB, storeClient *minio.Client, mailClient *gochimp.MandrillAPI, tokenSecret, appDomain string) *Config {
+	return &Config{dbClient, storeClient, mailClient, tokenSecret, appDomain}
 }

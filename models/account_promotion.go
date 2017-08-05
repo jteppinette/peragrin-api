@@ -28,6 +28,16 @@ func (ap *AccountPromotion) HasPermission(client *sqlx.DB) (bool, error) {
 	result := struct {
 		Exists bool
 	}{}
+
+	promotion, err := GetPromotionByID(ap.PromotionID, client)
+	if err != nil {
+		return false, err
+	}
+
+	if promotion.MembershipID == nil {
+		return true, nil
+	}
+
 	if err := client.Get(&result, `
 		SELECT EXISTS(
 			SELECT FROM Account

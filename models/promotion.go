@@ -48,3 +48,12 @@ func GetPromotionsByOrganization(organizationID int, client *sqlx.DB) (Promotion
 	}
 	return promotions, nil
 }
+
+// GetPromotionByID returns the promotion with the provided ID.
+func GetPromotionByID(id int, client *sqlx.DB) (*Promotion, error) {
+	promotion := &Promotion{}
+	if err := client.Get(promotion, "SELECT * FROM Promotion WHERE id = $1;", id); err != nil {
+		return nil, err
+	}
+	return promotion, nil
+}

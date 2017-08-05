@@ -53,7 +53,7 @@ func (c *Config) ForgotPasswordHandler(r *http.Request) *service.Response {
 }
 
 // ListOrganizationsHandler generates a response object containing the organizations that are
-// operated by the currently authenticated account.
+// operated by the provided account.
 func (c *Config) ListOrganizationsHandler(r *http.Request) *service.Response {
 	id, err := strconv.Atoi(mux.Vars(r)["accountID"])
 	if err != nil {
@@ -69,6 +69,22 @@ func (c *Config) ListOrganizationsHandler(r *http.Request) *service.Response {
 		return service.NewResponse(err, http.StatusBadRequest, nil)
 	}
 	return service.NewResponse(nil, http.StatusOK, organizations)
+}
+
+// ListCommunitiesHandler generates a response object containing the communities that are
+// conntected to the provided account.
+func (c *Config) ListCommunitiesHandler(r *http.Request) *service.Response {
+	id, err := strconv.Atoi(mux.Vars(r)["accountID"])
+	if err != nil {
+		return service.NewResponse(errors.Wrap(err, errAccountIDRequired.Error()), http.StatusBadRequest, nil)
+	}
+
+	communities, err := models.GetCommunitiesByAccount(id, r.URL.Query(), c.DBClient)
+	if err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+
+	return service.NewResponse(nil, http.StatusOK, communities)
 }
 
 // CreateOrganizationHandler saves a new organization to the database.

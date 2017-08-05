@@ -1,6 +1,10 @@
 package models
 
 import (
+	"fmt"
+	"net/url"
+	"strconv"
+
 	"github.com/jmoiron/sqlx"
 )
 
@@ -87,4 +91,28 @@ func GetCommunityByMembershipID(id int, client *sqlx.DB) (Community, error) {
 		return community, err
 	}
 	return community, nil
+}
+
+// GetCommunitiesByAccount returns all communities that are connected by the given account.
+// This function will also return only those communities that are connected via an isAdministrator
+// link, if the isAdministrator field is in the provided query.
+func GetCommunitiesByAccount(accountID int, query url.Values, client *sqlx.DB) (Communities, error) {
+	communities := Communities{}
+	const format string = `
+		SELECT DISTINCT ON (Community.id) Community.*, CommunityOrganization.isAdministrator FROM Community
+		INNER JOIN CommunityOrganization ON (Community.id = CommunityOrganization.communityID)
+		INNER JOIN AccountOrganization ON (CommunityOrganization.organizationID = AccountOrganization.organizationID)
+		WHERE AccountOrganization.accountID = $1 %s ORDER BY Community.id, CommunityOrganization.isAdministrator DESC;
+	`
+	if b, err := strconv.ParseBool(query.Get("isAdministrator")); err != nil {
+		if err := client.Select(&communities, fmt.Sprintf(format, ""), accountID); err != nil {
+			return nil, err
+		}
+	} else {
+		if err := client.Select(&communities, fmt.Sprintf(format, "AND CommunityOrganization.isAdministrator = $2"), accountID, b); err != nil {
+			return nil, err
+		}
+
+	}
+	return communities, nil
 }

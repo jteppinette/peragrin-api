@@ -86,7 +86,7 @@ func (a *Account) SendResetPasswordEmail(appDomain, tokenSecret string, client *
 	return nil
 }
 
-func (a *Account) SendActivationEmail(next, appDomain, tokenSecret string, client *gochimp.MandrillAPI) error {
+func (a *Account) SendActivationEmail(next, appDomain, tokenSecret, name string, client *gochimp.MandrillAPI) error {
 	token, err := a.AuthToken(tokenSecret, time.Hour*24*7)
 	if err != nil {
 		return err
@@ -98,9 +98,16 @@ func (a *Account) SendActivationEmail(next, appDomain, tokenSecret string, clien
 		return err
 	}
 
+	var subject string
+	if name == "" {
+		subject = "Account Activation"
+	} else {
+		subject = fmt.Sprintf("%s Account Activation", name)
+	}
+
 	if _, err := client.MessageSend(gochimp.Message{
 		Html:      rendered,
-		Subject:   "Account Activation",
+		Subject:   subject,
 		FromEmail: "donotreply@peragrin.com",
 		FromName:  "Peragrin",
 		To:        []gochimp.Recipient{{Email: a.Email}},

@@ -205,7 +205,12 @@ func (c *Config) AddAccountHandler(r *http.Request) *service.Response {
 		return service.NewResponse(errAccountCreation, http.StatusBadRequest, map[string]string{"msg": errAccountCreation.Error()})
 	}
 
-	if err := account.SendActivationEmail(fmt.Sprintf("/organizations/%d", organizationID), c.AppDomain, c.TokenSecret, c.MailClient); err != nil {
+	organization, err := models.GetOrganizationByID(organizationID, c.DBClient)
+	if err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+
+	if err := account.SendActivationEmail(fmt.Sprintf("/organizations/%d", organizationID), c.AppDomain, c.TokenSecret, fmt.Sprintf("%s Operator", organization.Name), c.MailClient); err != nil {
 		log.WithFields(log.Fields{
 			"email": account.Email, "error": err.Error(), "id": r.Header.Get("X-Request-ID"),
 		}).Info(errAccountActivationEmail.Error())

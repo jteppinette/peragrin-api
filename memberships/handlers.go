@@ -102,7 +102,7 @@ func (c *Config) AddAccountHandler(r *http.Request) *service.Response {
 		return service.NewResponse(err, http.StatusBadRequest, nil)
 	}
 
-	if err := account.SendActivationEmail(fmt.Sprintf("/map?community=%s", community.Name), c.AppDomain, c.TokenSecret, c.MailClient); err != nil {
+	if err := account.SendActivationEmail(fmt.Sprintf("/map?community=%s", community.Name), c.AppDomain, c.TokenSecret, fmt.Sprintf("%s Membership", community.Name), c.MailClient); err != nil {
 		log.WithFields(log.Fields{
 			"email": account.Email, "error": err.Error(), "id": r.Header.Get("X-Request-ID"),
 		}).Info(errAccountActivationEmail.Error())

@@ -58,7 +58,7 @@ func addSuperUser() {
 		log.WithFields(log.Fields{"email": account.Email, "error": err.Error()}).Fatal(errors.New("update super user status"))
 	}
 
-	if err := account.SendActivationEmail("/communities", viper.GetString("APP_DOMAIN"), viper.GetString("TOKEN_SECRET"), mailClient); err != nil {
+	if err := account.SendActivationEmail("/communities", viper.GetString("APP_DOMAIN"), viper.GetString("TOKEN_SECRET"), "Super User", mailClient); err != nil {
 		log.WithFields(log.Fields{"email": account.Email, "error": err.Error()}).Fatal(errors.New("account activation email"))
 	}
 

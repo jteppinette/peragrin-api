@@ -24,6 +24,32 @@ type Account struct {
 	IsSuper   bool   `json:"isSuper"`
 }
 
+// Create adds all accounts in the provided slice to the database.
+func (accounts *Accounts) Create(client *sqlx.DB) error {
+	if len(*accounts) == 0 {
+		return nil
+	}
+
+	statement := "INSERT INTO Account (email, firstName, lastName) VALUES "
+	args := make([]interface{}, len(*accounts)*3)
+
+	for i, account := range *accounts {
+		statement = statement + "(?, ?, ?),"
+		set := i * 3
+		args[set+0] = account.Email
+		args[set+1] = account.FirstName
+		args[set+2] = account.LastName
+	}
+
+	statement = statement[0:len(statement)-1] + " RETURNING id, email, firstName, lastName, isSuper;"
+	created := Accounts{}
+	if err := client.Select(&created, client.Rebind(statement), args...); err != nil {
+		return err
+	}
+	*accounts = created
+	return nil
+}
+
 // Save creates or updates the given account in the database.
 func (a *Account) Save(client *sqlx.DB) error {
 	if a.ID != 0 {
@@ -252,6 +278,22 @@ func GetAccountsByOrganization(organizationID int, client *sqlx.DB) (Accounts, e
 		FROM Account INNER JOIN AccountOrganization ON (Account.id = AccountOrganization.accountID)
 		WHERE AccountOrganization.organizationID = $1
 	`, organizationID); err != nil {
+		return nil, err
+	}
+	return accounts, nil
+}
+
+// GetAccountsByEmails returns the set of accounts that have an email in the provided list.
+func GetAccountsByEmails(emails []string, client *sqlx.DB) (Accounts, error) {
+	accounts := Accounts{}
+	query, args, err := sqlx.In(`
+		SELECT Account.id, Account.email, Account.firstName, Account.lastName, Account.isSuper
+		FROM Account WHERE email IN (?);
+	`, emails)
+	if err != nil {
+		return nil, err
+	}
+	if err := client.Select(&accounts, client.Rebind(query), args...); err != nil {
 		return nil, err
 	}
 	return accounts, nil

@@ -2,9 +2,11 @@ package communities
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 
@@ -139,4 +141,67 @@ func (c *Config) ListPostsHandler(r *http.Request) *service.Response {
 		return service.NewResponse(err, http.StatusBadRequest, nil)
 	}
 	return service.NewResponse(nil, http.StatusOK, posts)
+}
+
+// BulkAddAccountsHandler creates and invites multiple accounts to a community as business operators
+// in a single atomic action.
+func (c *Config) BulkAddAccountsHandler(r *http.Request) *service.Response {
+	id, err := strconv.Atoi(mux.Vars(r)["communityID"])
+	if err != nil {
+		return service.NewResponse(errors.Wrap(err, errCommunityIDRequired.Error()), http.StatusBadRequest, nil)
+	}
+
+	community, err := models.GetCommunityByID(id, c.DBClient)
+	if err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+
+	accounts := models.Accounts{}
+	if err := json.NewDecoder(r.Body).Decode(&accounts); err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+
+	emails := []string{}
+	for _, account := range accounts {
+		emails = append(emails, account.Email)
+	}
+
+	existing, err := models.GetAccountsByEmails(emails, c.DBClient)
+	if err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+
+	needs := models.Accounts{}
+	for _, account := range accounts {
+		var exists bool
+		for _, lookup := range existing {
+			if account.Email == lookup.Email {
+				exists = true
+				break
+			}
+		}
+		if !exists {
+			needs = append(needs, account)
+		}
+	}
+	if err := needs.Create(c.DBClient); err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+
+	go func() {
+		defer func() {
+			if err := recover(); err != nil {
+				log.WithFields(log.Fields{"error": err, "id": r.Header.Get("X-Request-ID")}).Info(errAccountActivationEmail.Error())
+			}
+		}()
+		for _, need := range needs {
+			if err := need.SendActivationEmail("/setup/business-leader", c.AppDomain, c.TokenSecret, fmt.Sprintf("%s Business Operator", community.Name), c.MailClient); err != nil {
+				log.WithFields(log.Fields{
+					"email": need.Email, "error": err.Error(), "id": r.Header.Get("X-Request-ID"),
+				}).Info(errAccountActivationEmail.Error())
+			}
+		}
+	}()
+
+	return service.NewResponse(nil, http.StatusOK, nil)
 }

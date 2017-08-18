@@ -129,7 +129,7 @@ func (c *Config) ListHandler(r *http.Request) *service.Response {
 	return service.NewResponse(nil, http.StatusOK, response{models.Accounts{*account}, 1})
 }
 
-// ListPromotionRedemptionHandler returns the list of promotion redemption events for the given
+// ListPromotionRedemptionsHandler returns the list of promotion redemption events for the given
 // account and promotion.
 func (c *Config) ListPromotionRedemptionsHandler(r *http.Request) *service.Response {
 	accountID, err := strconv.Atoi(mux.Vars(r)["accountID"])
@@ -150,20 +150,20 @@ func (c *Config) ListPromotionRedemptionsHandler(r *http.Request) *service.Respo
 	return service.NewResponse(nil, http.StatusOK, events)
 }
 
-// ListPromotionsRedemptionsHandler returns the list of promotion redemption events for the given
+// ListRedemptionsHandler returns the list of promotion redemption events for the given
 // account.
-func (c *Config) ListPromotionsRedemptionsHandler(r *http.Request) *service.Response {
+func (c *Config) ListRedemptionsHandler(r *http.Request) *service.Response {
 	accountID, err := strconv.Atoi(mux.Vars(r)["accountID"])
 	if err != nil {
 		return service.NewResponse(errors.Wrap(err, errAccountIDRequired.Error()), http.StatusBadRequest, nil)
 	}
 
-	events, err := models.GetAccountsPromotionsByAccount(accountID, c.DBClient)
+	redemptions, err := models.GetAccountsPromotionsByAccount(accountID, c.DBClient)
 	if err != nil {
 		return service.NewResponse(err, http.StatusBadRequest, nil)
 	}
 
-	return service.NewResponse(nil, http.StatusOK, events)
+	return service.NewResponse(nil, http.StatusOK, redemptions)
 }
 
 // ListMembershipsByCommunityHandler returns the list of memberships that an account is currently a member of.

@@ -150,6 +150,22 @@ func (c *Config) ListPromotionRedemptionsHandler(r *http.Request) *service.Respo
 	return service.NewResponse(nil, http.StatusOK, events)
 }
 
+// ListPromotionsRedemptionsHandler returns the list of promotion redemption events for the given
+// account.
+func (c *Config) ListPromotionsRedemptionsHandler(r *http.Request) *service.Response {
+	accountID, err := strconv.Atoi(mux.Vars(r)["accountID"])
+	if err != nil {
+		return service.NewResponse(errors.Wrap(err, errAccountIDRequired.Error()), http.StatusBadRequest, nil)
+	}
+
+	events, err := models.GetAccountsPromotionsByAccount(accountID, c.DBClient)
+	if err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+
+	return service.NewResponse(nil, http.StatusOK, events)
+}
+
 // ListMembershipsByCommunityHandler returns the list of memberships that an account is currently a member of.
 // These memberships will be grouped into their corresponding communities.
 func (c *Config) ListMembershipsByCommunityHandler(r *http.Request) *service.Response {
@@ -161,6 +177,10 @@ func (c *Config) ListMembershipsByCommunityHandler(r *http.Request) *service.Res
 	memberships, err := models.GetMembershipsByAccount(accountID, c.DBClient)
 	if err != nil {
 		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+
+	if len(memberships) == 0 {
+		return service.NewResponse(nil, http.StatusOK, []interface{}{})
 	}
 
 	ids := []int{}

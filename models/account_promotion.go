@@ -8,8 +8,8 @@ import (
 
 // AccountPromotion represents the relationship between organizations and communities.
 type AccountPromotion struct {
-	AccountID   int       `json:"-"`
-	PromotionID int       `json:"-"`
+	AccountID   int       `json:"accountID, omitempty"`
+	PromotionID int       `json:"promotionID, omitempty"`
 	ConsumedAt  time.Time `json:"consumedAt"`
 }
 
@@ -55,6 +55,15 @@ func (ap *AccountPromotion) HasPermission(client *sqlx.DB) (bool, error) {
 func GetAccountsPromotionsByID(accountID, promotionID int, client *sqlx.DB) ([]AccountPromotion, error) {
 	result := []AccountPromotion{}
 	if err := client.Select(&result, "SELECT * FROM AccountPromotion WHERE AccountID = $1 AND PromotionID = $2 ORDER BY consumedAt DESC;", accountID, promotionID); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+// GetAccountsPromotionsByAccount returns all account promotion redemption events for the given account.
+func GetAccountsPromotionsByAccount(accountID int, client *sqlx.DB) ([]AccountPromotion, error) {
+	result := []AccountPromotion{}
+	if err := client.Select(&result, "SELECT * FROM AccountPromotion WHERE AccountID = $1 ORDER BY consumedAt DESC;", accountID); err != nil {
 		return nil, err
 	}
 	return result, nil

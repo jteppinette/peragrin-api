@@ -129,7 +129,7 @@ func (c *Config) ListHandler(r *http.Request) *service.Response {
 	return service.NewResponse(nil, http.StatusOK, response{models.Accounts{*account}, 1})
 }
 
-// ListPromotionRedemptionsHandler returns the list of promotion redemption events for the given
+// ListPromotionRedemptionHandler returns the list of promotion redemption events for the given
 // account and promotion.
 func (c *Config) ListPromotionRedemptionsHandler(r *http.Request) *service.Response {
 	accountID, err := strconv.Atoi(mux.Vars(r)["accountID"])

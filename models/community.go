@@ -84,6 +84,19 @@ func GetCommunityByID(id int, client *sqlx.DB) (Community, error) {
 	return community, nil
 }
 
+// GetCommmunitiesByID returns all communities with an id in the provided list.
+func GetCommunitiesByID(ids []int, client *sqlx.DB) (Communities, error) {
+	communities := Communities{}
+	query, args, err := sqlx.In("SELECT * FROM Community WHERE id IN (?);", ids)
+	if err != nil {
+		return nil, err
+	}
+	if err := client.Select(&communities, client.Rebind(query), args...); err != nil {
+		return nil, err
+	}
+	return communities, nil
+}
+
 // GetCommunityByMembershipID returns the requested community.
 func GetCommunityByMembershipID(id int, client *sqlx.DB) (Community, error) {
 	community := Community{}

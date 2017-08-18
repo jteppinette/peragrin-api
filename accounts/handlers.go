@@ -149,3 +149,46 @@ func (c *Config) ListPromotionRedemptionsHandler(r *http.Request) *service.Respo
 
 	return service.NewResponse(nil, http.StatusOK, events)
 }
+
+// ListMembershipsByCommunityHandler returns the list of memberships that an account is currently a member of.
+// These memberships will be grouped into their corresponding communities.
+func (c *Config) ListMembershipsByCommunityHandler(r *http.Request) *service.Response {
+	accountID, err := strconv.Atoi(mux.Vars(r)["accountID"])
+	if err != nil {
+		return service.NewResponse(errors.Wrap(err, errAccountIDRequired.Error()), http.StatusBadRequest, nil)
+	}
+
+	memberships, err := models.GetMembershipsByAccount(accountID, c.DBClient)
+	if err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+
+	ids := []int{}
+	for _, membership := range memberships {
+		ids = append(ids, membership.CommunityID)
+	}
+
+	communities, err := models.GetCommunitiesByID(ids, c.DBClient)
+	if err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+
+	type communityWithMemberships struct {
+		models.Community
+		Memberships []models.Membership `json:"memberships"`
+	}
+
+	result := []communityWithMemberships{}
+	for _, community := range communities {
+		v := communityWithMemberships{community, []models.Membership{}}
+		for _, membership := range memberships {
+			if membership.CommunityID == community.ID {
+				membership.CommunityID = 0
+				v.Memberships = append(v.Memberships, membership)
+			}
+		}
+		result = append(result, v)
+	}
+
+	return service.NewResponse(nil, http.StatusOK, result)
+}

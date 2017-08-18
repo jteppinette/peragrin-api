@@ -12,6 +12,7 @@ type Membership struct {
 	ID          int    `json:"id"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
+	CommunityID int    `json:"communityID,omitempty"`
 }
 
 // Create adds a new membership to the database.
@@ -42,6 +43,19 @@ func GetMembershipByID(membershipID int, client *sqlx.DB) (*Membership, error) {
 		return nil, err
 	}
 	return m, nil
+}
+
+// GetMembershipsByAccount returns all memberships that an account has.
+func GetMembershipsByAccount(accountID int, client *sqlx.DB) ([]Membership, error) {
+	memberships := []Membership{}
+	if err := client.Select(&memberships, `
+		SELECT Membership.* FROM Membership
+		INNER JOIN AccountMembership ON (Membership.id = AccountMembership.membershipID)
+		WHERE AccountMembership.accountID = $1;
+	`, accountID); err != nil {
+		return nil, err
+	}
+	return memberships, nil
 }
 
 // DeleteMembership removes a membership from the database.

@@ -72,9 +72,9 @@ func serve() {
 	r.Handle("/communities/{communityID:[0-9]+}/organizations", service.Handler(communities.CreateOrganizationHandler)).Methods(http.MethodPost)
 	r.Handle("/communities/{communityID:[0-9]+}/posts", auth.RequiredMiddleware(communities.ListPostsHandler))
 	r.Handle("/communities/{communityID:[0-9]+}/geo-json-overlays", service.Handler(communities.ListGeoJSONOverlaysHandler))
-	r.Handle("/communities/{communityID:[0-9]+}/memberships", service.Handler(communities.ListMembershipsHandler)).Methods(http.MethodGet)
-	r.Handle("/communities/{communityID:[0-9]+}/memberships", service.Handler(communities.CreateMembershipHandler)).Methods(http.MethodPost)
-	r.Handle("/communities/{communityID:[0-9]+}/accounts", service.Handler(communities.BulkAddAccountsHandler)).Methods(http.MethodPost).Headers("X-Action", "bulk")
+	r.Handle("/communities/{communityID:[0-9]+}/memberships", auth.RequiredMiddleware(communities.ListMembershipsHandler)).Methods(http.MethodGet)
+	r.Handle("/communities/{communityID:[0-9]+}/memberships", auth.RequiredMiddleware(communities.CreateMembershipHandler)).Methods(http.MethodPost)
+	r.Handle("/communities/{communityID:[0-9]+}/accounts", auth.RequiredMiddleware(communities.BulkAddAccountsHandler)).Methods(http.MethodPost).Headers("X-Action", "bulk")
 
 	r.Handle("/memberships/{membershipID:[0-9]+}", auth.RequiredMiddleware(memberships.GetHandler)).Methods(http.MethodGet)
 	r.Handle("/memberships/{membershipID:[0-9]+}", auth.RequiredMiddleware(memberships.UpdateHandler)).Methods(http.MethodPut)

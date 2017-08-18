@@ -163,7 +163,31 @@ func (c *Config) ListRedemptionsHandler(r *http.Request) *service.Response {
 		return service.NewResponse(err, http.StatusBadRequest, nil)
 	}
 
-	return service.NewResponse(nil, http.StatusOK, redemptions)
+	ids := []int{}
+	for _, redemption := range redemptions {
+		ids = append(ids, redemption.PromotionID)
+	}
+
+	promotions, err := models.GetPromotionsByID(ids, c.DBClient)
+	if err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+
+	type event struct {
+		models.AccountPromotion
+		Promotion models.Promotion `json:"promotion"`
+	}
+	result := []event{}
+	for _, redemption := range redemptions {
+		for _, promotion := range promotions {
+			if redemption.PromotionID == promotion.ID {
+				result = append(result, event{redemption, promotion})
+				break
+			}
+		}
+	}
+
+	return service.NewResponse(nil, http.StatusOK, result)
 }
 
 // ListMembershipsByCommunityHandler returns the list of memberships that an account is currently a member of.

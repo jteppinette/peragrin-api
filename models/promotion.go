@@ -57,3 +57,16 @@ func GetPromotionByID(id int, client *sqlx.DB) (*Promotion, error) {
 	}
 	return promotion, nil
 }
+
+// GetPromotionsByID returns the promotions that have an id in the provided list of ids.
+func GetPromotionsByID(ids []int, client *sqlx.DB) (Promotions, error) {
+	promotions := Promotions{}
+	query, args, err := sqlx.In("SELECT * FROM Promotion WHERE id IN (?);", ids)
+	if err != nil {
+		return nil, err
+	}
+	if err := client.Select(&promotions, client.Rebind(query), args...); err != nil {
+		return nil, err
+	}
+	return promotions, nil
+}

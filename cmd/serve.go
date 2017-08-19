@@ -70,6 +70,7 @@ func serve() {
 
 	r.Handle("/communities", service.Handler(communities.ListHandler))
 	r.Handle("/communities/{communityID:[0-9]+}", service.Handler(communities.GetHandler)).Methods(http.MethodGet)
+	r.Handle("/communities/{communityID:[0-9]+}", auth.RequiredMiddleware(communities.UpdateHandler)).Methods(http.MethodPut)
 	r.Handle("/communities/{communityID:[0-9]+}/organizations", service.Handler(communities.ListOrganizationsHandler)).Methods(http.MethodGet)
 	r.Handle("/communities/{communityID:[0-9]+}/organizations", service.Handler(communities.CreateOrganizationHandler)).Methods(http.MethodPost)
 	r.Handle("/communities/{communityID:[0-9]+}/posts", auth.RequiredMiddleware(communities.ListPostsHandler))

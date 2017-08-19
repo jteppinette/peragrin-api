@@ -205,3 +205,22 @@ func (c *Config) BulkAddAccountsHandler(r *http.Request) *service.Response {
 
 	return service.NewResponse(nil, http.StatusOK, nil)
 }
+
+// UpdateHandler updates an community.
+func (c *Config) UpdateHandler(r *http.Request) *service.Response {
+	id, err := strconv.Atoi(mux.Vars(r)["communityID"])
+	if err != nil {
+		return service.NewResponse(errors.Wrap(err, errCommunityIDRequired.Error()), http.StatusBadRequest, nil)
+	}
+
+	community := models.Community{}
+	if err := json.NewDecoder(r.Body).Decode(&community); err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+	community.ID = id
+
+	if err := community.Update(c.DBClient); err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+	return service.NewResponse(nil, http.StatusOK, community)
+}

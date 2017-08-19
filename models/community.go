@@ -55,6 +55,11 @@ func (c *Community) Create(organizationID int, client *sqlx.DB) error {
 	return nil
 }
 
+// Update updates a community in the database.
+func (c *Community) Update(client *sqlx.DB) error {
+	return client.Get(c, "UPDATE Community SET name = $2, lon = $3, lat = $4, zoom = $5 WHERE id = $1 RETURNING *;", c.ID, c.Name, c.Lon, c.Lat, c.Zoom)
+}
+
 // GetCommunities returns all communities in the database.
 func GetCommunities(client *sqlx.DB) (Communities, error) {
 	communities := Communities{}

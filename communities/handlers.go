@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/gorilla/context"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 
@@ -223,4 +224,27 @@ func (c *Config) UpdateHandler(r *http.Request) *service.Response {
 		return service.NewResponse(err, http.StatusBadRequest, nil)
 	}
 	return service.NewResponse(nil, http.StatusOK, community)
+}
+
+// CreateHandler creates a new community. This requires that the requesting account is
+// a super user.
+func (c *Config) CreateHandler(r *http.Request) *service.Response {
+	account, ok := context.Get(r, "account").(models.Account)
+	if !ok {
+		return service.NewResponse(errAuthenticationRequired, http.StatusUnauthorized, nil)
+	}
+	if !account.IsSuper {
+		return service.NewResponse(errSuperUserRequired, http.StatusForbidden, nil)
+	}
+
+	community := models.Community{}
+	if err := json.NewDecoder(r.Body).Decode(&community); err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+
+	if err := community.Create(c.DBClient); err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+
+	return service.NewResponse(nil, http.StatusCreated, community)
 }

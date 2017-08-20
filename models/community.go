@@ -25,10 +25,10 @@ type Community struct {
 	IsAdministrator *bool `json:"isAdministrator,omitempty"`
 }
 
-// Create persists the provided community in the database, and it creates
+// CreateWithOrganization persists the provided community in the database, and it creates
 // the relationship to the provided organization. This will be an administrative
 // relationship.
-func (c *Community) Create(organizationID int, client *sqlx.DB) error {
+func (c *Community) CreateWithOrganization(organizationID int, client *sqlx.DB) error {
 	tx, err := client.Beginx()
 	if err != nil {
 		return err
@@ -53,6 +53,11 @@ func (c *Community) Create(organizationID int, client *sqlx.DB) error {
 	}
 
 	return nil
+}
+
+// Create adds a new community to the database.
+func (c *Community) Create(client *sqlx.DB) error {
+	return client.Get(c, "INSERT INTO Community (name, lon, lat, zoom) VALUES ($1, $2, $3, $4) RETURNING *;", c.Name, c.Lon, c.Lat, c.Zoom)
 }
 
 // Update updates a community in the database.

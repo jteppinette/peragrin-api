@@ -272,7 +272,7 @@ func (c *Config) CreateCommunityHandler(r *http.Request) *service.Response {
 		return service.NewResponse(err, http.StatusBadRequest, nil)
 	}
 
-	if err := community.Create(organizationID, c.DBClient); err != nil {
+	if err := community.CreateWithOrganization(organizationID, c.DBClient); err != nil {
 		return service.NewResponse(err, http.StatusBadRequest, nil)
 	}
 	return service.NewResponse(nil, http.StatusCreated, community)

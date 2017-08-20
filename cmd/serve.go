@@ -74,7 +74,7 @@ func serve() {
 	r.Handle("/communities/{communityID:[0-9]+}", auth.RequiredMiddleware(communities.DeleteHandler)).Methods(http.MethodDelete)
 	r.Handle("/communities/{communityID:[0-9]+}", auth.RequiredMiddleware(communities.UpdateHandler)).Methods(http.MethodPut)
 	r.Handle("/communities/{communityID:[0-9]+}/organizations", service.Handler(communities.ListOrganizationsHandler)).Methods(http.MethodGet)
-	r.Handle("/communities/{communityID:[0-9]+}/organizations", service.Handler(communities.CreateOrganizationHandler)).Methods(http.MethodPost)
+	r.Handle("/communities/{communityID:[0-9]+}/organizations", auth.RequiredMiddleware(communities.CreateOrganizationHandler)).Methods(http.MethodPost)
 	r.Handle("/communities/{communityID:[0-9]+}/posts", auth.RequiredMiddleware(communities.ListPostsHandler))
 	r.Handle("/communities/{communityID:[0-9]+}/geo-json-overlays", service.Handler(communities.ListGeoJSONOverlaysHandler))
 	r.Handle("/communities/{communityID:[0-9]+}/memberships", auth.RequiredMiddleware(communities.ListMembershipsHandler)).Methods(http.MethodGet)

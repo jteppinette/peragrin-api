@@ -63,6 +63,11 @@ func (c *Config) ListOrganizationsHandler(r *http.Request) *service.Response {
 // CreateOrganizationHandler creates a new organization that is automatically
 // joined with the creating community.
 func (c *Config) CreateOrganizationHandler(r *http.Request) *service.Response {
+	account, ok := context.Get(r, "account").(models.Account)
+	if !ok {
+		return service.NewResponse(errAuthenticationRequired, http.StatusUnauthorized, nil)
+	}
+
 	communityID, err := strconv.Atoi(mux.Vars(r)["communityID"])
 	if err != nil {
 		return service.NewResponse(errors.Wrap(err, errCommunityIDRequired.Error()), http.StatusBadRequest, nil)
@@ -71,6 +76,9 @@ func (c *Config) CreateOrganizationHandler(r *http.Request) *service.Response {
 	organization := models.Organization{}
 	if err := json.NewDecoder(r.Body).Decode(&organization); err != nil {
 		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+	if !account.IsSuper {
+		organization.IsAdministrator = nil
 	}
 
 	if err := organization.CreateWithCommunity(communityID, c.DBClient); err != nil {

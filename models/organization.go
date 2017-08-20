@@ -126,7 +126,12 @@ func (o *Organization) CreateWithCommunity(communityID int, client *sqlx.DB) err
 	if err != nil {
 		return err
 	}
-	_, err = tx.Exec("INSERT INTO CommunityOrganization (organizationID, communityID, isAdministrator) VALUES ($1, $2, $3);", o.ID, communityID, false)
+
+	var isAdministrator bool
+	if o.IsAdministrator != nil && *o.IsAdministrator {
+		isAdministrator = true
+	}
+	_, err = tx.Exec("INSERT INTO CommunityOrganization (organizationID, communityID, isAdministrator) VALUES ($1, $2, $3);", o.ID, communityID, isAdministrator)
 	if err != nil {
 		return err
 	}

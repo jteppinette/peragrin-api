@@ -139,3 +139,12 @@ func GetCommunitiesByAccount(accountID int, query url.Values, client *sqlx.DB) (
 	}
 	return communities, nil
 }
+
+// DeleteCommunity removes a community from the database.
+func DeleteCommunity(id int, client *sqlx.DB) error {
+	_, err := client.Exec("DELETE FROM Community WHERE id = $1;", id)
+	if err != nil {
+		return err
+	}
+	return nil
+}

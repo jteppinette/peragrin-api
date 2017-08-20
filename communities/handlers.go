@@ -248,3 +248,22 @@ func (c *Config) CreateHandler(r *http.Request) *service.Response {
 
 	return service.NewResponse(nil, http.StatusCreated, community)
 }
+
+// DeleteHandler deletes the requested community. This requires super user status.
+func (c *Config) DeleteHandler(r *http.Request) *service.Response {
+	account, ok := context.Get(r, "account").(models.Account)
+	if !ok {
+		return service.NewResponse(errAuthenticationRequired, http.StatusUnauthorized, nil)
+	}
+	if !account.IsSuper {
+		return service.NewResponse(errSuperUserRequired, http.StatusForbidden, nil)
+	}
+	id, err := strconv.Atoi(mux.Vars(r)["communityID"])
+	if err != nil {
+		return service.NewResponse(errors.Wrap(err, errCommunityIDRequired.Error()), http.StatusBadRequest, nil)
+	}
+	if err := models.DeleteCommunity(id, c.DBClient); err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+	return service.NewResponse(nil, http.StatusNoContent, nil)
+}

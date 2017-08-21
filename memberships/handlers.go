@@ -112,6 +112,31 @@ func (c *Config) AddAccountHandler(r *http.Request) *service.Response {
 	return service.NewResponse(nil, http.StatusOK, account)
 }
 
+// UpdateAccountHandler updates an account and account membership relationship.
+func (c *Config) UpdateAccountHandler(r *http.Request) *service.Response {
+	account := models.Account{}
+	if err := json.NewDecoder(r.Body).Decode(&account); err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+
+	membershipID, err := strconv.Atoi(mux.Vars(r)["membershipID"])
+	if err != nil {
+		return service.NewResponse(errors.Wrap(err, errMembershipIDRequired.Error()), http.StatusBadRequest, nil)
+	}
+
+	accountID, err := strconv.Atoi(mux.Vars(r)["accountID"])
+	if err != nil {
+		return service.NewResponse(errors.Wrap(err, errMembershipIDRequired.Error()), http.StatusBadRequest, nil)
+	}
+	account.ID = accountID
+
+	if err := account.UpdateWithMembership(membershipID, c.DBClient); err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+
+	return service.NewResponse(nil, http.StatusOK, account)
+}
+
 // DeleteHandler deletes a membership.
 func (c *Config) DeleteHandler(r *http.Request) *service.Response {
 	id, err := strconv.Atoi(mux.Vars(r)["membershipID"])

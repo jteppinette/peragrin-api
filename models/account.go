@@ -176,6 +176,34 @@ func (a *Account) CreateWithMembership(membershipID int, client *sqlx.DB) error 
 	return nil
 }
 
+// UpdateWithMembership updates an account and account membership relationship.
+func (a *Account) UpdateWithMembership(membershipID int, client *sqlx.DB) error {
+	tx, err := client.Beginx()
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+			return
+		}
+		tx.Commit()
+	}()
+
+	err = tx.Get(a, "UPDATE Account SET firstName = $2, lastName = $3 WHERE id = $1 RETURNING id, firstname, lastName, isSuper;", a.ID, a.FirstName, a.LastName)
+	if err != nil {
+		return err
+	}
+
+	err = tx.Get(a, "UPDATE AccountMembership SET expiration = $3 WHERE accountID = $1 AND membershipID = $2 RETURNING expiration;", a.ID, membershipID, a.Expiration)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // CreateWithAccount creates a new account with a connection to the
 // provided organization.
 func (a *Account) CreateWithOrganization(organizationID int, client *sqlx.DB) error {

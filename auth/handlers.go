@@ -7,7 +7,7 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/dgrijalva/jwt-go"
+	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/context"
 	"github.com/pkg/errors"
 	"gitlab.com/peragrin/api/models"
@@ -120,6 +120,11 @@ func (c *Config) RegisterHandler(r *http.Request) *service.Response {
 		return service.NewResponse(nil, http.StatusBadRequest, nil)
 	}
 
+	// If the 'X-Activation-Location' header is sent up, then use this as the 'next'
+	// query paremeter when generating the activation link. This will cause the user's
+	// first authenticated landing page to be the provided state.
+	next := r.Header.Get("X-Activation-Location")
+
 	// If the account already existing then simply return an HTTP 200.
 	if existing, err := models.GetAccountByEmail(account.Email, c.DBClient); err != nil {
 		return service.NewResponse(err, http.StatusBadRequest, nil)
@@ -140,7 +145,7 @@ func (c *Config) RegisterHandler(r *http.Request) *service.Response {
 		return service.NewResponse(nil, http.StatusOK, nil)
 	}
 
-	if err := account.SendActivationEmail("", c.AppDomain, c.TokenSecret, "", c.MailClient); err != nil {
+	if err := account.SendActivationEmail(next, c.AppDomain, c.TokenSecret, "", c.MailClient); err != nil {
 		log.WithFields(log.Fields{
 			"email": account.Email, "error": err.Error(), "id": r.Header.Get("X-Request-ID"),
 		}).Info(errAccountActivationEmail.Error())

@@ -2,6 +2,7 @@ package models
 
 import (
 	"database/sql"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -13,6 +14,10 @@ type Membership struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	CommunityID int    `json:"communityID,omitempty"`
+
+	// Expiration is used to define the time left for a provided account membership.
+	// This information is only useful when in the context of an account.
+	Expiration time.Time `json:"expiration,omitempty"`
 }
 
 // Create adds a new membership to the database.
@@ -49,7 +54,7 @@ func GetMembershipByID(membershipID int, client *sqlx.DB) (*Membership, error) {
 func GetMembershipsByAccount(accountID int, client *sqlx.DB) ([]Membership, error) {
 	memberships := []Membership{}
 	if err := client.Select(&memberships, `
-		SELECT Membership.* FROM Membership
+		SELECT Membership.*, AccountMembership.expiration FROM Membership
 		INNER JOIN AccountMembership ON (Membership.id = AccountMembership.membershipID)
 		WHERE AccountMembership.accountID = $1;
 	`, accountID); err != nil {

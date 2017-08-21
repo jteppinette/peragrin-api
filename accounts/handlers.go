@@ -163,6 +163,10 @@ func (c *Config) ListRedemptionsHandler(r *http.Request) *service.Response {
 		return service.NewResponse(err, http.StatusBadRequest, nil)
 	}
 
+	if len(redemptions) == 0 {
+		return service.NewResponse(nil, http.StatusOK, []interface{}{})
+	}
+
 	ids := []int{}
 	for _, redemption := range redemptions {
 		ids = append(ids, redemption.PromotionID)

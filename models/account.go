@@ -22,6 +22,10 @@ type Account struct {
 	FirstName string `json:"firstName"`
 	LastName  string `json:"lastName"`
 	IsSuper   bool   `json:"isSuper"`
+
+	// Expiration is used to define the time left for a provided membership.
+	// This information is only useful when in the context of a Membership.
+	Expiration time.Time `json:"expiration,omitempty"`
 }
 
 // Create adds all accounts in the provided slice to the database.
@@ -164,7 +168,7 @@ func (a *Account) CreateWithMembership(membershipID int, client *sqlx.DB) error 
 		return err
 	}
 
-	_, err = tx.Exec("INSERT INTO AccountMembership (accountID, membershipID) VALUES ($1, $2);", a.ID, membershipID)
+	_, err = tx.Exec("INSERT INTO AccountMembership (accountID, membershipID, expiration) VALUES ($1, $2, $3);", a.ID, membershipID, a.Expiration)
 	if err != nil {
 		return err
 	}
@@ -203,7 +207,7 @@ func (a *Account) CreateWithOrganization(organizationID int, client *sqlx.DB) er
 
 // AddMembership adds a new membership to the given account.
 func (a *Account) AddMembership(membershipID int, client *sqlx.DB) error {
-	if _, err := client.Exec("INSERT INTO AccountMembership (accountID, membershipID) VALUES ($1, $2);", a.ID, membershipID); err != nil {
+	if _, err := client.Exec("INSERT INTO AccountMembership (accountID, membershipID, expiration) VALUES ($1, $2, $3);", a.ID, membershipID, a.Expiration); err != nil {
 		return err
 	}
 	return nil
@@ -261,7 +265,7 @@ func GetAccountByID(id int, client *sqlx.DB) (*Account, error) {
 func GetAccountsByMembership(membershipID int, client *sqlx.DB) (Accounts, error) {
 	accounts := Accounts{}
 	if err := client.Select(&accounts, `
-		SELECT Account.id, Account.email, Account.firstName, Account.lastName, Account.isSuper
+		SELECT Account.id, Account.email, Account.firstName, Account.lastName, Account.isSuper, AccountMembership.Expiration
 		FROM Account INNER JOIN AccountMembership ON (Account.id = AccountMembership.accountID)
 		WHERE AccountMembership.membershipID = $1
 	`, membershipID); err != nil {

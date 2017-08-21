@@ -84,6 +84,7 @@ func (c *Config) AddAccountHandler(r *http.Request) *service.Response {
 	if existing, err := models.GetAccountByEmail(account.Email, c.DBClient); err != nil {
 		return service.NewResponse(nil, http.StatusBadRequest, nil)
 	} else if existing != nil {
+		existing.Expiration = account.Expiration
 		if err := existing.AddMembership(membershipID, c.DBClient); err != nil {
 			return service.NewResponse(err, http.StatusBadRequest, nil)
 		}

@@ -54,7 +54,7 @@ func GetMembershipByID(membershipID int, client *sqlx.DB) (*Membership, error) {
 func GetMembershipsByAccount(accountID int, client *sqlx.DB) ([]Membership, error) {
 	memberships := []Membership{}
 	if err := client.Select(&memberships, `
-		SELECT Membership.*, AccountMembership.expiration FROM Membership
+		SELECT Membership.id, Membership.name, Membership.description, Membership.communityID, AccountMembership.expiration FROM Membership
 		INNER JOIN AccountMembership ON (Membership.id = AccountMembership.membershipID)
 		WHERE AccountMembership.accountID = $1;
 	`, accountID); err != nil {

@@ -26,29 +26,23 @@ func (ap *AccountPromotion) Create(client *sqlx.DB) error {
 // the provided promotion.
 func (ap *AccountPromotion) HasPermission(client *sqlx.DB) (bool, error) {
 	result := struct {
-		Exists bool
+		Exists   bool
+		Required bool
 	}{}
 
-	promotion, err := GetPromotionByID(ap.PromotionID, client)
-	if err != nil {
-		return false, err
-	}
-
-	if promotion.MembershipID == nil {
-		return true, nil
-	}
-
 	if err := client.Get(&result, `
-		SELECT EXISTS(
-			SELECT FROM Account
-			INNER JOIN AccountMembership ON (Account.id = AccountMembership.accountiD)
-			INNER JOIN Promotion ON (AccountMembership.membershipID = Promotion.membershipID)
-			WHERE Promotion.id = $1 AND Account.id  = $2
-		);
+		SELECT
+			EXISTS(
+				SELECT FROM AccountMembership
+				LEFT OUTER JOIN Membership ON (AccountMembership.membershipID = Membership.id)
+				LEFT OUTER JOIN CommunityPromotion ON (Membership.communityID = CommunityPromotion.communityID)
+				WHERE CommunityPromotion.promotionID = $1 AND AccountMembership.accountID = $2
+			) AS exists,
+			EXISTS(SELECT FROM CommunityPromotion WHERE promotionID = $1) AS required;
 	`, ap.PromotionID, ap.AccountID); err != nil {
 		return false, err
 	}
-	return result.Exists, nil
+	return result.Exists || !result.Required, nil
 }
 
 // GetAccountsPromotionsByID returns all account promotion redemption events for the given account and promotion.

@@ -2,6 +2,7 @@ package models
 
 import (
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 	"gitlab.com/peragrin/api/common"
 )
 
@@ -17,7 +18,7 @@ type Promotion struct {
 	Exclusions     string              `json:"exclusions"`
 	Expiration     common.JSONNullTime `json:"expiration"`
 	IsSingleUse    bool                `json:"isSingleUse"`
-	MembershipID   *int                `json:"membershipID,omitempty"`
+	Communities    pq.Int64Array       `json:"communities"`
 
 	// Redemptions is the number of times this promotion has been redeemed.
 	Redemptions int `json:"redemptions,omitempty"`
@@ -25,46 +26,116 @@ type Promotion struct {
 
 // Save creates or updates a promotion in the database based on the existence of an id.
 func (p *Promotion) Save(client *sqlx.DB) error {
-	if p.ID != 0 {
-		return client.Get(p, "UPDATE Promotion SET name = $2, description = $3, exclusions = $4, expiration = $5, isSingleUse = $6, membershipID = $7 WHERE id = $1 RETURNING *;", p.ID, p.Name, p.Description, p.Exclusions, p.Expiration, p.IsSingleUse, p.MembershipID)
+	tx, err := client.Beginx()
+	if err != nil {
+		return err
 	}
-	return client.Get(p, "INSERT INTO Promotion (organizationID, name, description, exclusions, expiration, isSingleUse, membershipID) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *;", p.OrganizationID, p.Name, p.Description, p.Exclusions, p.Expiration, p.IsSingleUse, p.MembershipID)
+
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+			return
+		}
+		tx.Commit()
+	}()
+
+	if p.ID != 0 {
+		err = tx.Get(p, "UPDATE Promotion SET name = $2, description = $3, exclusions = $4, expiration = $5, isSingleUse = $6 WHERE id = $1 RETURNING *;", p.ID, p.Name, p.Description, p.Exclusions, p.Expiration, p.IsSingleUse)
+		if err != nil {
+			return err
+		}
+		_, err = tx.Exec("DELETE FROM CommunityPromotion WHERE promotionID = $1;", p.ID)
+		if err != nil {
+			return err
+		}
+	} else {
+		err = tx.Get(p, "INSERT INTO Promotion (organizationID, name, description, exclusions, expiration, isSingleUse) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *;", p.OrganizationID, p.Name, p.Description, p.Exclusions, p.Expiration, p.IsSingleUse)
+		if err != nil {
+			return err
+		}
+	}
+
+	if len(p.Communities) == 0 {
+		return nil
+	}
+
+	statement := "INSERT INTO CommunityPromotion (communityID, promotionID) VALUES "
+	args := make([]interface{}, len(p.Communities)*2)
+
+	for i, communityID := range p.Communities {
+		statement = statement + "(?, ?),"
+		set := i * 2
+		args[set+0] = communityID
+		args[set+1] = p.ID
+	}
+
+	_, err = tx.Exec(sqlx.Rebind(sqlx.BindType("postgres"), statement[0:len(statement)-1]), args...)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // DeletePromotion removes a promotion from the database.
 func DeletePromotion(id int, client *sqlx.DB) error {
-	_, err := client.Exec("DELETE FROM Promotion WHERE id = $1;", id)
+	tx, err := client.Beginx()
 	if err != nil {
 		return err
 	}
+
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+			return
+		}
+		tx.Commit()
+	}()
+
+	_, err = tx.Exec("DELETE FROM Promotion WHERE id = $1;", id)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec("DELETE FROM CommunityPromotion WHERE promotionID = $1;", id)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 // GetPromotionsByOrganization returns all promotions for a given organization.
 func GetPromotionsByOrganization(organizationID int, client *sqlx.DB) (Promotions, error) {
 	promotions := Promotions{}
-	if err := client.Select(&promotions, "SELECT Promotion.*, COUNT(AccountPromotion) AS redemptions FROM Promotion LEFT OUTER JOIN AccountPromotion ON (Promotion.id = AccountPromotion.promotionID) WHERE Promotion.organizationID = $1 GROUP BY Promotion.id;", organizationID); err != nil {
+	if err := client.Select(&promotions, `
+		SELECT Promotion.*, COUNT(AccountPromotion) AS redemptions, (
+			SELECT ARRAY(SELECT communityID FROM CommunityPromotion WHERE promotionID = Promotion.id)
+		) as communities
+		FROM Promotion LEFT OUTER JOIN AccountPromotion ON (Promotion.id = AccountPromotion.promotionID)
+		WHERE Promotion.organizationID = $1 GROUP BY Promotion.id;
+	`, organizationID); err != nil {
 		return nil, err
 	}
 	return promotions, nil
 }
 
-// GetPromotionByID returns the promotion with the provided ID.
-func GetPromotionByID(id int, client *sqlx.DB) (*Promotion, error) {
-	promotion := &Promotion{}
-	if err := client.Get(promotion, "SELECT * FROM Promotion WHERE id = $1;", id); err != nil {
-		return nil, err
-	}
-	return promotion, nil
-}
-
 // GetPromotionsByID returns the promotions that have an id in the provided list of ids.
 func GetPromotionsByID(ids []int, client *sqlx.DB) (Promotions, error) {
 	promotions := Promotions{}
-	query, args, err := sqlx.In("SELECT * FROM Promotion WHERE id IN (?);", ids)
+	query, args, err := sqlx.In(`
+		SELECT Promotion.*, (
+			SELECT ARRAY(SELECT communityID FROM CommunityPromotion WHERE promotionID = Promotion.id)
+		) as communities
+		FROM Promotion WHERE Promotion.id IN (?);
+	`, ids)
 	if err != nil {
 		return nil, err
 	}
+	if err := client.Select(&promotions, client.Rebind(query), args...); err != nil {
+		return nil, err
+	}
+
 	if err := client.Select(&promotions, client.Rebind(query), args...); err != nil {
 		return nil, err
 	}

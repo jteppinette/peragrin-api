@@ -19,3 +19,11 @@ func (co *CommunityOrganization) Create(client *sqlx.DB) error {
 		RETURNING *;
 	`, co.OrganizationID, co.CommunityID, co.IsAdministrator)
 }
+
+// Delete removes a community organization relationship from the database.
+func (co *CommunityOrganization) Delete(client *sqlx.DB) error {
+	if _, err := client.Exec("DELETE FROM CommunityOrganization WHERE organizationID = $1 AND communityID = $2;", co.OrganizationID, co.CommunityID); err != nil {
+		return err
+	}
+	return nil
+}

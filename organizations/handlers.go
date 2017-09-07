@@ -258,6 +258,26 @@ func (c *Config) JoinCommunityHandler(r *http.Request) *service.Response {
 	return service.NewResponse(nil, http.StatusOK, nil)
 }
 
+// RemoveCommunityHandler deletes a relationship between the given
+// organization and community.
+func (c *Config) RemoveCommunityHandler(r *http.Request) *service.Response {
+	organizationID, err := strconv.Atoi(mux.Vars(r)["organizationID"])
+	if err != nil {
+		return service.NewResponse(errors.Wrap(err, errOrganizationIDRequired.Error()), http.StatusBadRequest, nil)
+	}
+
+	communityID, err := strconv.Atoi(mux.Vars(r)["communityID"])
+	if err != nil {
+		return service.NewResponse(errors.Wrap(err, errCommunityIDRequired.Error()), http.StatusBadRequest, nil)
+	}
+
+	co := models.CommunityOrganization{CommunityID: communityID, OrganizationID: organizationID}
+	if co.Delete(c.DBClient); err != nil {
+		return service.NewResponse(err, http.StatusBadRequest, nil)
+	}
+	return service.NewResponse(nil, http.StatusOK, nil)
+}
+
 // CreateCommunityHandler creates a new community and creates an
 // administrative relationship between the requesting
 // organization and community.

@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/gorilla/context"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 
@@ -251,7 +252,25 @@ func (c *Config) JoinCommunityHandler(r *http.Request) *service.Response {
 		return service.NewResponse(errors.Wrap(err, errCommunityIDRequired.Error()), http.StatusBadRequest, nil)
 	}
 
-	co := models.CommunityOrganization{CommunityID: communityID, OrganizationID: organizationID}
+	co := models.CommunityOrganization{}
+	if err := json.NewDecoder(r.Body).Decode(&co); err != nil {
+		// Only log the error if the body cannot be decoded, because a json body is not required.
+		log.WithFields(log.Fields{
+			"error": err.Error(), "organizationID": organizationID, "communityID": communityID, "id": r.Header.Get("X-Request-ID"),
+		}).Info(errJoinCommunity.Error())
+	}
+	co.CommunityID = communityID
+	co.OrganizationID = organizationID
+
+	// If the acting account is not a super administrator, then they cannot create an administrative relationship.
+	account, ok := context.Get(r, "account").(models.Account)
+	if !ok {
+		return service.NewResponse(errAuthenticationRequired, http.StatusUnauthorized, nil)
+	}
+	if !account.IsSuper {
+		co.IsAdministrator = false
+	}
+
 	if co.Create(c.DBClient); err != nil {
 		return service.NewResponse(err, http.StatusBadRequest, nil)
 	}

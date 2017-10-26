@@ -54,6 +54,56 @@ func (accounts *Accounts) Create(client *sqlx.DB) error {
 	return nil
 }
 
+// CreateWithMembership adds all accounts in the provided slice to the database
+// and connects them to the provided membership.
+func (accounts *Accounts) CreateWithMembership(membershipID int, client *sqlx.DB) error {
+	if len(*accounts) == 0 {
+		return nil
+	}
+
+	expirations := map[string]time.Time{}
+	for _, account := range *accounts {
+		expirations[account.Email] = account.Expiration
+	}
+
+	statement := "INSERT INTO Account (email, firstName, lastName) VALUES "
+	args := make([]interface{}, len(*accounts)*3)
+
+	for i, account := range *accounts {
+		statement = statement + "(?, ?, ?),"
+		set := i * 3
+		args[set+0] = account.Email
+		args[set+1] = account.FirstName
+		args[set+2] = account.LastName
+	}
+
+	statement = statement[0:len(statement)-1] + " RETURNING id, email, firstName, lastName, isSuper;"
+	created := Accounts{}
+	if err := client.Select(&created, client.Rebind(statement), args...); err != nil {
+		return err
+	}
+	*accounts = created
+
+	// Create account/membership relationships.
+	statement = "INSERT INTO AccountMembership (accountID, membershipID, expiration) VALUES "
+	args = make([]interface{}, len(*accounts)*3)
+
+	for i, account := range *accounts {
+		statement = statement + "(?, ?, ?),"
+		set := i * 3
+		args[set+0] = account.ID
+		args[set+1] = membershipID
+		args[set+2] = expirations[account.Email]
+	}
+
+	statement = statement[0:len(statement)-1] + ";"
+	if _, err := client.Exec(client.Rebind(statement), args...); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Save creates or updates the given account in the database.
 func (a *Account) Save(client *sqlx.DB) error {
 	if a.ID != 0 {

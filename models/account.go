@@ -369,8 +369,8 @@ func GetAccountsByOrganization(organizationID int, client *sqlx.DB) (Accounts, e
 func GetAccountsByEmails(emails []string, client *sqlx.DB) (Accounts, error) {
 	accounts := Accounts{}
 	query, args, err := sqlx.In(`
-		SELECT Account.id, Account.email, Account.firstName, Account.lastName, Account.isSuper
-		FROM Account WHERE email IN (?);
+		SELECT Account.id, LOWER(Account.email) as email, Account.firstName, Account.lastName, Account.isSuper
+		FROM Account WHERE LOWER(email) IN (?);
 	`, emails)
 	if err != nil {
 		return nil, err

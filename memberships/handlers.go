@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
@@ -136,8 +137,9 @@ func (c *Config) BulkAddAccountsHandler(r *http.Request) *service.Response {
 	}
 
 	emails := []string{}
-	for _, account := range accounts {
-		emails = append(emails, account.Email)
+	for idx, _ := range accounts {
+		accounts[idx].Email = strings.ToLower(accounts[idx].Email)
+		emails = append(emails, accounts[idx].Email)
 	}
 
 	existing, err := models.GetAccountsByEmails(emails, c.DBClient)

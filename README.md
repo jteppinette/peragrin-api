@@ -1,4 +1,4 @@
-# API - *peragrin api*
+# Peragrin API - *peragrin api*
 
 ## Development
 

@@ -9,8 +9,8 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 
-	"gitlab.com/peragrin/api/models"
-	"gitlab.com/peragrin/api/service"
+	"github.com/jteppinette/peragrin-api/models"
+	"github.com/jteppinette/peragrin-api/service"
 )
 
 // UpdateHandler updates a promotion.

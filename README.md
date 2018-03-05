@@ -9,11 +9,11 @@
 
 ### Getting Started
 
-1. `git clone https://gitlab.com/peragrin/api.git $GOPATH/src/gitlab.com/peragrin/api`
+1. `git clone https://github.com/jteppinette/peragrin-api.git $GOPATH/src/github.com/jteppinette/peragrin-api`
 
 2. `docker-compose up -d db`
 
-3. `cd $GOPATH/src/gitlab.com/peragrin/api`
+3. `cd $GOPATH/src/github.com/jteppinette/peragrin-api`
 
 4. `go run main.go migrate -m <migrations-directory>`
 

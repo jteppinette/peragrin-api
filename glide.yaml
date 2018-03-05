@@ -1,4 +1,4 @@
-package: gitlab.com/peragrin/api
+package: github.com/jteppinette/peragrin-api
 import:
 - package: github.com/gorilla/context
   version: ~1.1.0

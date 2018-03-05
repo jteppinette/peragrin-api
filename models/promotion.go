@@ -2,8 +2,8 @@ package models
 
 import (
 	"github.com/jmoiron/sqlx"
+	"github.com/jteppinette/peragrin-api/common"
 	"github.com/lib/pq"
-	"gitlab.com/peragrin/api/common"
 )
 
 // Promotions is a list of promotion objects.

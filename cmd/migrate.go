@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"gitlab.com/peragrin/api/db"
+	"github.com/jteppinette/peragrin-api/db"
 
 	// This import register the file source driver for mattes/migrate.
 	_ "github.com/mattes/migrate/source/file"

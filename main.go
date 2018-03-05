@@ -8,10 +8,10 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"gitlab.com/peragrin/api/cmd"
+	"github.com/jteppinette/peragrin-api/cmd"
 )
 
-const program = "api"
+const program = "peragrin-api"
 
 var cfp string
 

@@ -11,8 +11,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"gitlab.com/peragrin/api/db"
-	"gitlab.com/peragrin/api/models"
+	"github.com/jteppinette/peragrin-api/db"
+	"github.com/jteppinette/peragrin-api/models"
 )
 
 func addSuperUser() {

@@ -6,8 +6,8 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 
-	"gitlab.com/peragrin/api/models"
-	"gitlab.com/peragrin/api/service"
+	"github.com/jteppinette/peragrin-api/models"
+	"github.com/jteppinette/peragrin-api/service"
 )
 
 // LookupHandler returns the longitude and latitude given an address.

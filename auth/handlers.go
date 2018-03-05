@@ -9,9 +9,9 @@ import (
 	log "github.com/Sirupsen/logrus"
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/context"
+	"github.com/jteppinette/peragrin-api/models"
+	"github.com/jteppinette/peragrin-api/service"
 	"github.com/pkg/errors"
-	"gitlab.com/peragrin/api/models"
-	"gitlab.com/peragrin/api/service"
 )
 
 // SetPasswordHandler allows an authenticated user to set a new password.

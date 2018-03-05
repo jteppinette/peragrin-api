@@ -12,15 +12,15 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"gitlab.com/peragrin/api/accounts"
-	"gitlab.com/peragrin/api/auth"
-	"gitlab.com/peragrin/api/communities"
-	"gitlab.com/peragrin/api/db"
-	"gitlab.com/peragrin/api/geo"
-	"gitlab.com/peragrin/api/memberships"
-	"gitlab.com/peragrin/api/organizations"
-	"gitlab.com/peragrin/api/promotions"
-	"gitlab.com/peragrin/api/service"
+	"github.com/jteppinette/peragrin-api/accounts"
+	"github.com/jteppinette/peragrin-api/auth"
+	"github.com/jteppinette/peragrin-api/communities"
+	"github.com/jteppinette/peragrin-api/db"
+	"github.com/jteppinette/peragrin-api/geo"
+	"github.com/jteppinette/peragrin-api/memberships"
+	"github.com/jteppinette/peragrin-api/organizations"
+	"github.com/jteppinette/peragrin-api/promotions"
+	"github.com/jteppinette/peragrin-api/service"
 )
 
 func serve() {

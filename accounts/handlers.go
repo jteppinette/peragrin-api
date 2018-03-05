@@ -6,9 +6,9 @@ import (
 	"strconv"
 
 	"github.com/gorilla/mux"
+	"github.com/jteppinette/peragrin-api/models"
+	"github.com/jteppinette/peragrin-api/service"
 	"github.com/pkg/errors"
-	"gitlab.com/peragrin/api/models"
-	"gitlab.com/peragrin/api/service"
 )
 
 // UpdateAccountHandler updates an account.

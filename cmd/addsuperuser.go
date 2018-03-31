@@ -75,7 +75,7 @@ var AddSuperUser *cobra.Command
 
 func init() {
 	AddSuperUser = &cobra.Command{
-		Use: "add-super-user",
+		Use: "addsuperuser",
 		Run: func(_ *cobra.Command, args []string) {
 			addSuperUser()
 		},

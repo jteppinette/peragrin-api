@@ -84,9 +84,25 @@ func main() {
 	root.PersistentFlags().StringP("app-domain", "", "http://localhost:8080", "app domain")
 	viper.BindPFlag("APP_DOMAIN", root.PersistentFlags().Lookup("app-domain"))
 
+	root.PersistentFlags().StringP("mail-from", "", "notifications@peragrin.localhost", "mail from")
+	viper.BindPFlag("MAIL_FROM", root.PersistentFlags().Lookup("mail-from"))
+
+	root.PersistentFlags().StringP("mail-host", "", "0.0.0.0", "mail host")
+	viper.BindPFlag("MAIL_HOST", root.PersistentFlags().Lookup("mail-host"))
+
+	root.PersistentFlags().IntP("mail-port", "", 1025, "mail port")
+	viper.BindPFlag("MAIL_PORT", root.PersistentFlags().Lookup("mail-port"))
+
+	root.PersistentFlags().StringP("mail-password", "", "", "mail password")
+	viper.BindPFlag("MAIL_PASSWORD", root.PersistentFlags().Lookup("mail-password"))
+
+	root.PersistentFlags().StringP("mail-user", "", "", "mail user")
+	viper.BindPFlag("MAIL_USER", root.PersistentFlags().Lookup("mail-user"))
+
 	root.AddCommand(cmd.Migrate)
 	root.AddCommand(cmd.Serve)
 	root.AddCommand(cmd.AddSuperUser)
+	root.AddCommand(cmd.SendTestMail)
 
 	if err := root.Execute(); err != nil {
 		log.Fatal(err)

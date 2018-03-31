@@ -11,7 +11,7 @@
 
 1. `git clone https://github.com/jteppinette/peragrin-api.git $GOPATH/src/github.com/jteppinette/peragrin-api`
 
-2. `docker-compose up -d db`
+2. `docker-compose up -d db minio mail`
 
 3. `cd $GOPATH/src/github.com/jteppinette/peragrin-api`
 
@@ -33,45 +33,10 @@ Any variables marked as `insecure: true` should be overriden before being added 
 * PORT                `default: 8000`
 * TOKEN_SECRET        `default: token-secret, insecure: true`
 * LOG_LEVEL           `default: info`
-* LOCATIONIQ_API_KEY
-
-### Docker
-
-1. `docker build . -t app`
-
-2. `docker run \
-      -d
-      -e POSTGRES_DB=db
-      -e POSTGRES_USER=db
-      -e POSTGRES_PASSWORD=db-secret
-      --name db
-      postgres:9.6.2`
-
-3. `docker run
-      -d
-      -p 8000:80
-      -e DB_NAME=db
-      -e DB_USER=db
-      -e DB_PORT=3306
-      -e DB_PASSWORD=db-secret
-      -e DB_HOST=db
-      --link db
-      --name app
-      app`
-
-4. `docker exec -it app api migrate -m <migrations-directory>`
-
-## Restore From Backups
-
-### DB
-
-```
-cat <backup-filepath> | docker exec -i `docker ps --filter name=db -q` psql -U postgres db
-```
-
-### Store
-
-```
-docker cp <backup-filepath> `docker ps --filter name=minio -q`:/etc/backup.tar.gz
-docker exec -it `docker ps --filter name=minio -q` tar xfv /etc/backup.tar.gz -C /data
-```
+* LOCATIONIQ_API_KEY  `insecure: true`
+* MANDRILL_KEY        `insecure: true`
+* MAIL_FROM           `default: notifications@peragrin.localhost`
+* MAIL_HOST           `default: 0.0.0.0`
+* MAIL_PORT           `default: 1025`
+* MAIL_PASSWORD       `insecure: true`
+* MAIL_USER           `insecure: true`

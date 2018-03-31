@@ -10,11 +10,12 @@ services:
     build: .
     ports:
       - 8000:80
-    env_file: .env
     environment:
       - DB_HOST=db
       - DB_PORT=5432
       - STORE_ENDPOINT=minio:9000
+      - MAIL_HOST=mail
+      - MAIL_PORT=1025
     links:
       - db
       - minio
@@ -40,3 +41,9 @@ services:
     command: server /data
     volumes:
       - minio:/data
+
+  mail:
+    image: schickling/mailcatcher
+    ports:
+      - "1025:1025"
+      - "1080:1080"

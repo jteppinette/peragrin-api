@@ -34,7 +34,6 @@ Any variables marked as `insecure: true` should be overriden before being added 
 * TOKEN_SECRET        `default: token-secret, insecure: true`
 * LOG_LEVEL           `default: info`
 * LOCATIONIQ_API_KEY  `insecure: true`
-* MANDRILL_KEY        `insecure: true`
 * MAIL_FROM           `default: notifications@peragrin.localhost`
 * MAIL_HOST           `default: 0.0.0.0`
 * MAIL_PORT           `default: 1025`

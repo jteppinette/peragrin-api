@@ -6,12 +6,12 @@ import (
 	"os"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/mattbaird/gochimp"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
 	"github.com/jteppinette/peragrin-api/db"
+	"github.com/jteppinette/peragrin-api/mail"
 	"github.com/jteppinette/peragrin-api/models"
 )
 
@@ -23,10 +23,7 @@ func addSuperUser() {
 		log.Fatal(err)
 	}
 
-	mailClient, err := gochimp.NewMandrill(viper.GetString("MANDRILL_KEY"))
-	if err != nil {
-		log.Fatal(err)
-	}
+	mailClient := mail.New(viper.GetString("MAIL_FROM"), viper.GetString("MAIL_HOST"), viper.GetInt("MAIL_PORT"), viper.GetString("MAIL_PASSWORD"), viper.GetString("MAIL_USER"))
 
 	fmt.Print("Enter super user email address: ")
 	scanner := bufio.NewScanner(os.Stdin)

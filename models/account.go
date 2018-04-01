@@ -8,8 +8,9 @@ import (
 
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/jmoiron/sqlx"
-	"github.com/mattbaird/gochimp"
 	"golang.org/x/crypto/bcrypt"
+
+	"github.com/jteppinette/peragrin-api/mail"
 )
 
 // Accounts is a slice of account structs.
@@ -142,38 +143,16 @@ func (a Account) AuthToken(key string, expiration time.Duration) (string, error)
 }
 
 // SendResetPasswordEmail sends a templated reset password email for the provided user.
-func (a *Account) SendResetPasswordEmail(appDomain, tokenSecret string, client *gochimp.MandrillAPI) error {
+func (a *Account) SendResetPasswordEmail(appDomain, tokenSecret string, client *mail.Config) error {
 	token, err := a.AuthToken(tokenSecret, time.Hour*24)
 	if err != nil {
 		return err
 	}
-
-	merge := []gochimp.Var{{"RESET_PASSWORD_LINK", fmt.Sprintf("%s/#/auth/set-password?token=%s", appDomain, token)}}
-	rendered, err := client.TemplateRender("reset-password", nil, merge)
-	if err != nil {
-		return err
-	}
-
-	if _, err := client.MessageSend(gochimp.Message{
-		Html:      rendered,
-		Subject:   "Reset Password",
-		FromEmail: "donotreply@peragrin.com",
-		FromName:  "Peragrin",
-		To:        []gochimp.Recipient{{Email: a.Email}},
-	}, false); err != nil {
-		return err
-	}
-	return nil
+	return client.Send([]string{a.Email}, "Reset Password", fmt.Sprintf("%s/#/auth/set-password?token=%s", appDomain, token))
 }
 
-func (a *Account) SendActivationEmail(next, appDomain, tokenSecret, name string, client *gochimp.MandrillAPI) error {
+func (a *Account) SendActivationEmail(next, appDomain, tokenSecret, name string, client *mail.Config) error {
 	token, err := a.AuthToken(tokenSecret, time.Hour*24*7)
-	if err != nil {
-		return err
-	}
-
-	merge := []gochimp.Var{{"SET_PASSWORD_LINK", fmt.Sprintf("%s/#/auth/activate?token=%s&next=%s", appDomain, token, next)}}
-	rendered, err := client.TemplateRender("account-activation", nil, merge)
 	if err != nil {
 		return err
 	}
@@ -185,16 +164,7 @@ func (a *Account) SendActivationEmail(next, appDomain, tokenSecret, name string,
 		subject = fmt.Sprintf("%s Account Activation", name)
 	}
 
-	if _, err := client.MessageSend(gochimp.Message{
-		Html:      rendered,
-		Subject:   subject,
-		FromEmail: "donotreply@peragrin.com",
-		FromName:  "Peragrin",
-		To:        []gochimp.Recipient{{Email: a.Email}},
-	}, false); err != nil {
-		return err
-	}
-	return nil
+	return client.Send([]string{a.Email}, subject, fmt.Sprintf("%s/#/auth/activate?token=%s&next=%s", appDomain, token, next))
 }
 
 // CreateWithMembership creates a new account with a connection to the

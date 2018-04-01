@@ -7,7 +7,6 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
-	"github.com/mattbaird/gochimp"
 	minio "github.com/minio/minio-go"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -17,6 +16,7 @@ import (
 	"github.com/jteppinette/peragrin-api/communities"
 	"github.com/jteppinette/peragrin-api/db"
 	"github.com/jteppinette/peragrin-api/geo"
+	"github.com/jteppinette/peragrin-api/mail"
 	"github.com/jteppinette/peragrin-api/memberships"
 	"github.com/jteppinette/peragrin-api/organizations"
 	"github.com/jteppinette/peragrin-api/promotions"
@@ -36,10 +36,7 @@ func serve() {
 		log.Fatal(err)
 	}
 
-	mailClient, err := gochimp.NewMandrill(viper.GetString("MANDRILL_KEY"))
-	if err != nil {
-		log.Fatal(err)
-	}
+	mailClient := mail.New(viper.GetString("MAIL_FROM"), viper.GetString("MAIL_HOST"), viper.GetInt("MAIL_PORT"), viper.GetString("MAIL_PASSWORD"), viper.GetString("MAIL_USER"))
 
 	auth := auth.Init(dbClient, mailClient, viper.GetString("TOKEN_SECRET"), viper.GetString("APP_DOMAIN"))
 	accounts := accounts.Init(dbClient, storeClient, mailClient, viper.GetString("TOKEN_SECRET"), viper.GetString("APP_DOMAIN"))

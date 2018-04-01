@@ -78,9 +78,6 @@ func main() {
 	root.PersistentFlags().StringP("locationiq-api-key", "", "", "api key to access location iq api")
 	viper.BindPFlag("LOCATIONIQ_API_KEY", root.PersistentFlags().Lookup("locationiq-api-key"))
 
-	root.PersistentFlags().StringP("mandrill-key", "", "", "mandrill key")
-	viper.BindPFlag("MANDRILL_KEY", root.PersistentFlags().Lookup("mandrill-key"))
-
 	root.PersistentFlags().StringP("app-domain", "", "http://localhost:8080", "app domain")
 	viper.BindPFlag("APP_DOMAIN", root.PersistentFlags().Lookup("app-domain"))
 

@@ -21,6 +21,11 @@
 
 ## Usage
 
+### LocationIQ
+
+You will need to create a developer key at [LocationIQ](https://locationiq.org) before being able to run reverse geocode lookups.
+This feature is used when attempting to find the location of businesses or communities given an address.
+
 ### Environment Variables
 
 Any variables marked as `insecure: true` should be overriden before being added to a production system.
